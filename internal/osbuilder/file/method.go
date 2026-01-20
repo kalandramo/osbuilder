@@ -19,8 +19,8 @@ import (
 func (fm *FileManager) AddNewGRPCMethod(ws *types.WebServer) error {
 	kind, grpcServiceName := ws.R.SingularName, ws.GRPCServiceName
 
-	filePath := ws.Proj.Join(ws.API(), ws.Name+".proto")
-	importPath := filepath.Join(ws.Name, ws.Proj.D.APIVersion, ws.R.SingularLower+".proto")
+	filePath := ws.Proj.Join(ws.APIDir(), ws.Name+".proto")
+	importPath := filepath.Join(ws.Name, ws.Proj.M.APIVersion, ws.R.SingularLower+".proto")
 
 	b, err := os.ReadFile(filePath)
 	if err != nil {
@@ -60,7 +60,7 @@ func (fm *FileManager) AddNewMethod(layer string, filePath string, ws *types.Web
 		addImport(fset, node, fmt.Sprintf(
 			`%s%s "%s"`,
 			strings.ToLower(ws.R.SingularName),
-			ws.Proj.D.APIVersion,
+			ws.Proj.M.APIVersion,
 			importPath,
 		), importPath)
 	}
@@ -90,7 +90,7 @@ func (fm *FileManager) AddNewMethod(layer string, filePath string, ws *types.Web
 }
 
 func modifyAST(layer string, node *ast.File, ws *types.WebServer) {
-	kind, version := ws.R.SingularName, ws.Proj.D.APIVersion
+	kind, version := ws.R.SingularName, ws.Proj.M.APIVersion
 	if layer == "store" {
 		addMethodToInterface(node, "IStore", kind, kind+"Store", "// aaa")
 		addMethodToStruct(node, layer, ws)
@@ -164,7 +164,7 @@ func addMethodToInterface(node *ast.File, interfaceName, methodName, returnType,
 }
 
 func addMethodToStruct(file *ast.File, layer string, ws *types.WebServer) {
-	kind, version := ws.R.SingularName, ws.Proj.D.APIVersion
+	kind, version := ws.R.SingularName, ws.Proj.M.APIVersion
 	recv := "b"
 	retType := fmt.Sprintf("%s%s.%sBiz", strings.ToLower(kind), version, kind)
 	body := fmt.Sprintf("%s%s.New(b.store)", strings.ToLower(kind), version)

@@ -107,14 +107,14 @@ func (o *APIOptions) Complete(factory cmdutil.Factory, cmd *cobra.Command, args 
 	}
 
 	// Fill generated data
-	proj.D = (&types.GeneratedData{
+	proj.M = (&types.ProjectGen{
 		WorkDir:    o.RootDir,
 		APIVersion: "v1",
 		APIAlias:   "v1",
 		ModuleName: MustModulePath(proj.Metadata.ModulePath, o.RootDir),
 	}).Complete()
-	proj.D.ProjectName = filepath.Base(o.RootDir)
-	proj.D.RegistryPrefix = proj.Metadata.Image.RegistryPrefix
+	proj.M.ProjectName = filepath.Base(o.RootDir)
+	proj.M.RegistryPrefix = proj.Metadata.Image.RegistryPrefix
 
 	// If a single web server exists and BinaryName not set, default to it.
 	if o.BinaryName == "" && len(proj.WebServers) == 1 {
@@ -167,14 +167,14 @@ func (o *APIOptions) Run(args []string) (err error) {
 		}
 
 		// Update store.go
-		internalDir := filepath.Join(o.Project.D.WorkDir, fmt.Sprintf("internal/%s", ws.Name))
+		internalDir := filepath.Join(o.Project.M.WorkDir, fmt.Sprintf("internal/%s", ws.Name))
 		if err := fm.AddNewMethod("store", filepath.Join(internalDir, "store", "store.go"), ws, ""); err != nil {
 			return err
 		}
 
-		importPathSuffix := fmt.Sprintf("%s", ws.R.Last.SingularLower)
+		importPathSuffix := fmt.Sprintf("%s", ws.R.SingularLower)
 		if ws.R.ResourcePathPrefix != "" {
-			importPathSuffix = fmt.Sprintf("%s/%s", ws.R.ResourcePathPrefix, ws.R.Last.SingularLower)
+			importPathSuffix = fmt.Sprintf("%s/%s", ws.R.ResourcePathPrefix, ws.R.SingularLower)
 		}
 		// Update biz.go
 		if err := fm.AddNewMethod(
@@ -182,9 +182,9 @@ func (o *APIOptions) Run(args []string) (err error) {
 			filepath.Join(internalDir, "biz", "biz.go"),
 			ws,
 			fmt.Sprintf("%s/internal/%s/biz/%s/%s",
-				o.Project.D.ModuleName,
+				o.Project.M.ModuleName,
 				ws.Name,
-				o.Project.D.APIVersion,
+				o.Project.M.APIVersion,
 				importPathSuffix,
 			),
 		); err != nil {
@@ -201,24 +201,24 @@ func (o *APIOptions) Run(args []string) (err error) {
 // GenerateFiles materializes files for the selected web server and kind.
 func (o *APIOptions) GenerateFiles(fm *file.FileManager, ws *types.WebServer) error {
 	pairs := map[string]string{
-		filepath.Join(ws.API(), ws.R.SingularLower+".proto"):         "/project/pkg/api/apiserver/v1/post.proto",
-		filepath.Join(ws.Pkg(), "validation", ws.R.FileName):         "/project/internal/apiserver/pkg/validation/post.go",
-		filepath.Join(ws.Store(), ws.R.FileName):                     "/project/internal/apiserver/store/post.go",
-		filepath.Join(ws.RESTBiz()):                                  "/project/internal/apiserver/biz/v1/post/post.go",
-		filepath.Join(ws.Model(), ws.R.FileName):                     "/project/internal/apiserver/model/post.gen.go",
-		filepath.Join(ws.Model(), "hook_"+ws.R.FileName):             "/project/internal/apiserver/model/hook_post.go",
+		filepath.Join(ws.APIDir(), ws.R.SingularLower+".proto"):      "/project/pkg/api/apiserver/v1/post.proto",
+		filepath.Join(ws.PkgDir(), "validation", ws.R.FileName):      "/project/internal/apiserver/pkg/validation/post.go",
+		filepath.Join(ws.StoreDir(), ws.R.FileName):                  "/project/internal/apiserver/store/post.go",
+		filepath.Join(ws.RESTBizFile()):                              "/project/internal/apiserver/biz/v1/post/post.go",
+		filepath.Join(ws.ModelDir(), ws.R.FileName):                  "/project/internal/apiserver/model/post.gen.go",
+		filepath.Join(ws.ModelDir(), "hook_"+ws.R.FileName):          "/project/internal/apiserver/model/hook_post.go",
 		filepath.Join(ws.Proj.InternalPkg(), "errno", ws.R.FileName): "/project/internal/pkg/errno/post.go",
 	}
 
 	switch ws.WebFramework {
 	case known.WebFrameworkGin:
-		pairs[filepath.Join(ws.Handler(), ws.R.FileName)] = "/project/internal/apiserver/handler/gin/post.go"
+		pairs[filepath.Join(ws.HandlerDir(), ws.R.FileName)] = "/project/internal/apiserver/handler/gin/post.go"
 	case known.WebFrameworkGRPC:
 		pairs[filepath.Join("examples/client", ws.R.SingularLower, "main.go")] = "/project/examples/client/post/main.go"
-		pairs[filepath.Join(ws.Handler(), ws.R.FileName)] = "/project/internal/apiserver/handler/grpc/post.go"
+		pairs[filepath.Join(ws.HandlerDir(), ws.R.FileName)] = "/project/internal/apiserver/handler/grpc/post.go"
 	}
 
-	pairs[filepath.Join(ws.Pkg(), "conversion", ws.R.FileName)] = "/project/internal/apiserver/pkg/conversion/post.go"
+	pairs[filepath.Join(ws.PkgDir(), "conversion", ws.R.FileName)] = "/project/internal/apiserver/pkg/conversion/post.go"
 
 	// Generate templated files using the provided template engine
 	if err := helper.RenderTemplate(
@@ -237,7 +237,7 @@ func (o *APIOptions) GenerateFiles(fm *file.FileManager, ws *types.WebServer) er
 func (o *APIOptions) PrintGettingStarted(ws *types.WebServer) {
 	fmt.Printf("\n%s REST resource(s) creation succeeded %s\n", emoji.CheckMarkButton, color.GreenString("%s", strings.Join(o.Kinds, ",")))
 	if o.Project.Metadata.MakefileMode == known.MakefileModeNone {
-		PrintClosingTips(o.Project.D.ProjectName)
+		PrintClosingTips(o.Project.M.ProjectName)
 		return
 	}
 
@@ -257,5 +257,5 @@ func (o *APIOptions) PrintGettingStarted(ws *types.WebServer) {
 	)
 	fmt.Println(color.WhiteString("After restarting, you can run `go run examples/client/<kind>/main.go` to test the new resource."))
 
-	PrintClosingTips(o.Project.D.ProjectName)
+	PrintClosingTips(o.Project.M.ProjectName)
 }

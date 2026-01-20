@@ -49,7 +49,7 @@ type Project struct {
 	CLIApps    []*CLIApplication `yaml:"cliApps,omitempty"` // previously: CLIApp
 
 	// Common derived data used during generation (not serialized).
-	D *GeneratedData `yaml:"-"`
+	M *ProjectGen `yaml:"-"`
 }
 
 // Metadata holds general project information and build/deploy preferences.
@@ -95,8 +95,8 @@ func (p *Project) WebServerByBinary(binaryName string) (*WebServer, bool) {
 // If WorkDir is empty, it joins the elements as-is.
 func (p *Project) Join(elements ...string) string {
 	base := ""
-	if p != nil && p.D != nil {
-		base = p.D.WorkDir
+	if p != nil && p.M != nil {
+		base = p.M.WorkDir
 	}
 	parts := elements
 	if base != "" {
@@ -107,10 +107,10 @@ func (p *Project) Join(elements ...string) string {
 
 // Root returns the project root directory (WorkDir). Empty if not set.
 func (p *Project) Root() string {
-	if p == nil || p.D == nil {
+	if p == nil || p.M == nil {
 		return ""
 	}
-	return p.D.WorkDir
+	return p.M.WorkDir
 }
 
 // InternalPkg returns the path to the shared internal package directory.
@@ -178,4 +178,97 @@ Delete PROJECT or rename PROJECT IS NOT ALLOWED.`
 		return fmt.Errorf("close encoder: %w", err)
 	}
 	return nil
+}
+
+// REST captures the naming variants for the last/leaf segment of a resource path.
+// For example, for a path like "ticket/cron_job", "cron_job" would be treated as the "last" segment.
+type REST struct {
+	// Singular form of the kind (e.g., "CronJob").
+	SingularName string
+	// Plural form of the kind (e.g., "CronJobs").
+	PluralName string
+	// Singular name in lower format (e.g., "cronjob").
+	SingularLower string
+	// Plural name in lower format (e.g., "cronjobs").
+	PluralLower string
+	// Singular name in lowerCamel (first letter lower) (e.g., "cronJob").
+	SingularLowerFirst string
+	// Plural name in lowerCamel (first letter lower) (e.g., "cronJobs").
+	PluralLowerFirst string
+}
+
+// RESTGen captures naming conventions and helper metadata for generating REST resources.
+type RESTGen struct {
+	// REST holds the naming variants for the last (leaf) segment of the resource path,
+	// such as the final component in "ticket/cron_job".
+	REST
+	// REST REST
+
+	// Name of the associated GORM model (e.g., "CronJobModel").
+	GORMModel string
+	// Function name to map the model to the API.
+	MapModelToAPIFunc string
+	// Function name to map the API to the model.
+	MapAPIToModelFunc string
+	// Name of the business layer factory.
+	BusinessFactoryName string
+
+	// Name of the generated Go file.
+	FileName string
+	// ResourcePathPrefix is the URL or logical prefix used when exposing this resource via the REST API
+	// (e.g., "cronjobs" for "/api/v1/cronjobs").
+	ResourcePathPrefix string
+}
+
+type ServerGen struct {
+	// Computed/derived fields (not serialized).
+	Proj              *Project `yaml:"-"`
+	Name              string   `yaml:"-"`
+	EnvironmentPrefix string   `yaml:"-"`
+	// APIImportPath is like: v1 "module/pkg/api/apiserver/v1"
+	APIImportPath   string   `yaml:"-"`
+	R               *RESTGen `yaml:"-"`
+	TypedClientName string   `yaml:"-"`
+}
+
+func NewServerGen(proj *Project, binaryName string) ServerGen {
+	s := ServerGen{
+		Proj: proj,
+		Name: GetComponentName(binaryName),
+	}
+
+	// Environment variable prefix: PROJECT_COMPONENT (uppercased).
+	s.EnvironmentPrefix = strings.ReplaceAll(fmt.Sprintf("%s_%s",
+		strings.ToUpper(proj.M.ProjectName),
+		strings.ToUpper(s.Name),
+	), "-", "_")
+
+	// Import alias path for API package.
+	s.APIImportPath = fmt.Sprintf(`%s "%s/pkg/api/%s/%s"`,
+		s.Proj.M.APIAlias,
+		s.Proj.M.ModuleName,
+		s.Name,
+		s.Proj.M.APIVersion,
+	)
+	return s
+}
+
+// TemplateData is the rendering context for templates (project + one component).
+type TemplateData struct {
+	*Project
+	Web *WebServer
+	MQ  *MQServer
+}
+
+func (td *TemplateData) AbsPath(relPath string) string {
+	return td.Project.Join(relPath)
+}
+
+// GetComponentName extracts the component name from a binary name.
+func GetComponentName(binaryName string) string {
+	parts := strings.Split(binaryName, "-")
+	if len(parts) == 2 {
+		return parts[1]
+	}
+	return binaryName
 }

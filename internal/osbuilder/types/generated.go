@@ -5,8 +5,8 @@ import (
 	"strings"
 )
 
-// GeneratedData holds derived metadata and common paths used during code generation.
-type GeneratedData struct {
+// ProjectGen holds derived metadata and common paths used during code generation.
+type ProjectGen struct {
 	// WorkDir is the project root directory (absolute or relative).
 	// Example: $WORKSPACE/golang/src/github.com/onexstack/miniblog.
 	WorkDir string
@@ -33,7 +33,7 @@ type GeneratedData struct {
 // - APIAlias ← APIVersion (if empty)
 // - ProjectName ← base(WorkDir) (if empty)
 // - EnvironmentPrefix ← upper(ProjectName) with '-' replaced by '_' (if empty)
-func (d *GeneratedData) Complete() *GeneratedData {
+func (d *ProjectGen) Complete() *ProjectGen {
 	if d == nil {
 		return d
 	}

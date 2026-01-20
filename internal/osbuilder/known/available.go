@@ -68,4 +68,10 @@ var (
 		// ServiceRegistryConsul,
 		// ServiceRegistryNacos,
 	)
+
+	// AvailableMQFrameworks lists supported mq frameworks.
+	AvailableMQFrameworks = sets.New(
+		MQFrameworkKafka,
+		// MQFrameworkNSQ,
+	)
 )

@@ -121,15 +121,15 @@ func (o *ProjectOptions) Complete(_ cmdutil.Factory, _ *cobra.Command, args []st
 	}
 
 	// Fill generated data
-	proj.D = (&types.GeneratedData{
+	proj.M = (&types.ProjectGen{
 		WorkDir:    o.RootDir,
 		APIVersion: "v1",
 		APIAlias:   "v1",
 		ModuleName: MustModulePath(proj.Metadata.ModulePath, o.RootDir),
 	}).Complete()
 
-	proj.D.ProjectName = filepath.Base(o.RootDir)
-	proj.D.RegistryPrefix = proj.Metadata.Image.RegistryPrefix
+	proj.M.ProjectName = filepath.Base(o.RootDir)
+	proj.M.RegistryPrefix = proj.Metadata.Image.RegistryPrefix
 
 	o.Project = correctProjectConfig(proj)
 
@@ -137,6 +137,12 @@ func (o *ProjectOptions) Complete(_ cmdutil.Factory, _ *cobra.Command, args []st
 	for i, ws := range o.Project.WebServers {
 		o.Project.WebServers[i] = ws.Complete(o.Project)
 	}
+
+	// Generate per-jobserver files
+	for i, mq := range o.Project.MQServers {
+		o.Project.MQServers[i] = mq.Complete(o.Project)
+	}
+
 	return nil
 }
 
@@ -147,8 +153,8 @@ func (o *ProjectOptions) Validate(_ *cobra.Command, _ []string) error {
 	}
 
 	// Validate module path format
-	if err := validation.ValidateModulePath(o.Project.D.ModuleName); err != nil {
-		return fmt.Errorf("invalid module path %q: %w", o.Project.D.ModuleName, err)
+	if err := validation.ValidateModulePath(o.Project.M.ModuleName); err != nil {
+		return fmt.Errorf("invalid module path %q: %w", o.Project.M.ModuleName, err)
 	}
 
 	if err := validateMetadata(o.Project.Metadata); err != nil {
@@ -193,6 +199,26 @@ func (o *ProjectOptions) Validate(_ *cobra.Command, _ []string) error {
 		}
 	}
 
+	// Validate mq frameworks and storage types (per mq server)
+	for _, mq := range o.Project.MQServers {
+		// MQ framework
+		if !known.AvailableMQFrameworks.Has(mq.MQFramework) {
+			return fmt.Errorf(
+				"mq server %q: unsupported MQFramework %q; supported: %s",
+				mq.Name, mq.MQFramework, strings.Join(known.AvailableMQFrameworks.UnsortedList(), ", "),
+			)
+		}
+
+		// Storage type
+		st := strings.TrimSpace(mq.StorageType)
+		if !known.AvailableStorageTypes.Has(st) {
+			return fmt.Errorf(
+				"web server %q: unsupported storageType %q; supported: %s",
+				mq.Name, st, strings.Join(known.AvailableStorageTypes.UnsortedList(), ", "),
+			)
+		}
+	}
+
 	return nil
 }
 
@@ -220,13 +246,13 @@ func (o *ProjectOptions) Run(f cmdutil.Factory, ioStreams genericiooptions.IOStr
 
 // PrintGettingStarted prints follow-up commands to bootstrap the project.
 func (o *ProjectOptions) PrintGettingStarted() {
-	baseName := filepath.Base(o.Project.D.WorkDir)
+	baseName := filepath.Base(o.Project.M.WorkDir)
 
 	fmt.Printf("\n%s Project creation succeeded %s\n", emoji.CheckMarkButton, color.GreenString(baseName))
 	fmt.Printf("%s Use the following command to start the project %s:\n\n", emoji.Parse(":computer:"), emoji.Parse(":point_down:"))
 
 	fmt.Println(
-		color.WhiteString("$ cd %s", o.Project.D.WorkDir),
+		color.WhiteString("$ cd %s", o.Project.M.WorkDir),
 		color.CyanString("# enter project directory"),
 	)
 
@@ -236,10 +262,10 @@ func (o *ProjectOptions) PrintGettingStarted() {
 			color.CyanString("# (Optional, executed when dependencies missing) Install tools required by project."),
 		)
 
-		switch n := len(o.Project.WebServers); {
+		switch n := len(o.Project.MQServers); {
 		case n == 1:
 			fmt.Println(
-				color.WhiteString("$ make protoc.%s", o.Project.WebServers[0].Name),
+				color.WhiteString("$ make protoc.%s", o.Project.MQServers[0].Name),
 				color.CyanString("# generate gRPC code"),
 			)
 		case n > 0:
@@ -267,7 +293,7 @@ func (o *ProjectOptions) PrintGettingStarted() {
 	)
 
 	if o.Project.Metadata.MakefileMode == known.MakefileModeNone {
-		PrintClosingTips(o.Project.D.ProjectName)
+		PrintClosingTips(o.Project.M.ProjectName)
 		return
 	}
 
@@ -311,7 +337,7 @@ func (o *ProjectOptions) PrintGettingStarted() {
 		)
 	}
 
-	PrintClosingTips(o.Project.D.ProjectName)
+	PrintClosingTips(o.Project.M.ProjectName)
 }
 
 // Generate creates project-level files and per-component code based on templates.
@@ -387,7 +413,29 @@ func (o *ProjectOptions) Generate(f cmdutil.Factory, fm *file.FileManager) error
 			ws.TypedClientName = helper.ToLower(kind)
 			tplFile := "/project/internal/apiserver/pkg/clientset/typed/fake/fake.go"
 			pairs := map[string]string{
-				filepath.Join(ws.Pkg(), fmt.Sprintf("clientset/typed/%s/%s.go", ws.TypedClientName, ws.TypedClientName)): tplFile,
+				filepath.Join(ws.PkgDir(), fmt.Sprintf("clientset/typed/%s/%s.go", ws.TypedClientName, ws.TypedClientName)): tplFile,
+			}
+			if err := helper.RenderTemplate(fm, pairs, nil, &data); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Generate per-mqserver files
+	for _, mq := range o.Project.MQServers {
+		data := types.TemplateData{Project: o.Project, MQ: mq}
+
+		// 生成web server主文件
+		if err := helper.RenderTemplate(fm, mq.Pairs(), funcs, &data); err != nil {
+			return err
+		}
+
+		// 生成 client 类型的 fake 文件
+		for _, kind := range mq.Clients {
+			mq.TypedClientName = helper.ToLower(kind)
+			tplFile := "/project/internal/apiserver/pkg/clientset/typed/fake/fake.go"
+			pairs := map[string]string{
+				filepath.Join(mq.PkgDir(), fmt.Sprintf("clientset/typed/%s/%s.go", mq.TypedClientName, mq.TypedClientName)): tplFile,
 			}
 			if err := helper.RenderTemplate(fm, pairs, nil, &data); err != nil {
 				return err

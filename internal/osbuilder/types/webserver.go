@@ -12,58 +12,6 @@ import (
 	"github.com/onexstack/osbuilder/internal/osbuilder/known"
 )
 
-// Last captures the naming variants for the last/leaf segment of a resource path.
-// For example, for a path like "ticket/cron_job", "cron_job" would be treated as the "last" segment.
-type Last struct {
-	// Singular form of the kind (e.g., "CronJob").
-	SingularName string
-	// Plural form of the kind (e.g., "CronJobs").
-	PluralName string
-	// Singular name in lower format (e.g., "cronjob").
-	SingularLower string
-	// Plural name in lower format (e.g., "cronjobs").
-	PluralLower string
-	// Singular name in lowerCamel (first letter lower) (e.g., "cronJob").
-	SingularLowerFirst string
-	// Plural name in lowerCamel (first letter lower) (e.g., "cronJobs").
-	PluralLowerFirst string
-}
-
-// REST captures naming conventions and helper metadata for generating REST resources.
-type REST struct {
-	// Singular form of the kind (e.g., "CronJob").
-	SingularName string
-	// Plural form of the kind (e.g., "CronJobs").
-	PluralName string
-	// Singular name in lower format (e.g., "cronjob").
-	SingularLower string
-	// Plural name in lower format (e.g., "cronjobs").
-	PluralLower string
-	// Singular name in lowerCamel (first letter lower) (e.g., "cronJob").
-	SingularLowerFirst string
-	// Plural name in lowerCamel (first letter lower) (e.g., "cronJobs").
-	PluralLowerFirst string
-
-	// Last holds the naming variants for the last (leaf) segment of the resource path,
-	// such as the final component in "ticket/cron_job".
-	Last Last
-
-	// Name of the associated GORM model (e.g., "CronJobModel").
-	GORMModel string
-	// Function name to map the model to the API.
-	MapModelToAPIFunc string
-	// Function name to map the API to the model.
-	MapAPIToModelFunc string
-	// Name of the business layer factory.
-	BusinessFactoryName string
-
-	// Name of the generated Go file.
-	FileName string
-	// ResourcePathPrefix is the URL or logical prefix used when exposing this resource via the REST API
-	// (e.g., "cronjobs" for "/api/v1/cronjobs").
-	ResourcePathPrefix string
-}
-
 // WebServer describes a web server component to generate (HTTP/gRPC/etc).
 type WebServer struct {
 	// BinaryName is the CLI binary name (e.g., "mb-apiserver").
@@ -82,109 +30,88 @@ type WebServer struct {
 	WithPreloader   bool     `yaml:"withPreloader,omitempty"`
 	ServiceRegistry string   `yaml:"serviceRegistry,omitempty"`
 	Clients         []string `yaml:"clients,omitempty"`
+
 	// Computed/derived fields (not serialized).
-	Proj              *Project `yaml:"-"`
-	Name              string   `yaml:"-"`
-	EnvironmentPrefix string   `yaml:"-"`
-	// APIImportPath is like: v1 "module/pkg/api/apiserver/v1"
-	APIImportPath   string `yaml:"-"`
-	R               *REST  `yaml:"-"`
-	TypedClientName string `yaml:"-"`
+	ServerGen `yaml:"-"`
 }
 
 // Complete populates derived fields and sensible defaults.
 func (ws *WebServer) Complete(proj *Project) *WebServer {
-	ws.Proj = proj
-	ws.Name = GetComponentName(ws.BinaryName)
+	ws.ServerGen = NewServerGen(proj, ws.BinaryName)
 
 	// Default gRPC service name to UpperFirst(ComponentName), e.g., "Apiserver".
 	if strings.TrimSpace(ws.GRPCServiceName) == "" {
 		ws.GRPCServiceName = strutil.UpperFirst(ws.Name)
 	}
 
-	// Environment variable prefix: PROJECT_COMPONENT (uppercased).
-	ws.EnvironmentPrefix = strings.ReplaceAll(fmt.Sprintf("%s_%s",
-		strings.ToUpper(proj.D.ProjectName),
-		strings.ToUpper(ws.Name),
-	), "-", "_")
-
-	// Import alias path for API package.
-	ws.APIImportPath = fmt.Sprintf(`%s "%s/pkg/api/%s/%s"`,
-		ws.Proj.D.APIAlias,
-		ws.Proj.D.ModuleName,
-		ws.Name,
-		ws.Proj.D.APIVersion,
-	)
-
 	return ws
 }
 
-// Base returns the component base directory: internal/<component>.
-func (ws *WebServer) Base() string {
-	return filepath.Join("internal", ws.Name)
+// HandlerDir returns the handler directory for the component.
+func (ws *WebServer) HandlerDir() string {
+	return filepath.Join(ws.BaseDir(), "handler")
 }
 
-// Model returns the model directory for the component.
-func (ws *WebServer) Model() string {
-	return filepath.Join(ws.Base(), "model")
+// BizDir returns the business logic directory for the component.
+func (ws *WebServer) BizDir() string {
+	return filepath.Join(ws.BaseDir(), "biz")
 }
 
-// Pkg returns the pkg directory for the component.
-func (ws *WebServer) Pkg() string {
-	return filepath.Join(ws.Base(), "pkg")
-}
-
-// Handler returns the handler directory for the component.
-func (ws *WebServer) Handler() string {
-	return filepath.Join(ws.Base(), "handler")
-}
-
-// Biz returns the business logic directory for the component.
-func (ws *WebServer) Biz() string {
-	return filepath.Join(ws.Base(), "biz")
-}
-
-// Store returns the data store directory for the component.
-func (ws *WebServer) Store() string {
-	return filepath.Join(ws.Base(), "store")
-}
-
-// RESTBiz returns the business logic directory for the specified rest resource.
-func (ws *WebServer) RESTBiz() string {
+// RESTBizFile returns the business logic directory for the specified rest resource.
+func (ws *WebServer) RESTBizFile() string {
 	return filepath.Join(
-		ws.Biz(),
-		ws.Proj.D.APIVersion,
+		ws.BizDir(),
+		ws.Proj.M.APIVersion,
 		ws.R.ResourcePathPrefix,
-		ws.R.Last.SingularLower,
-		ws.R.Last.SingularLower+".go",
+		ws.R.REST.SingularLower,
+		ws.R.FileName,
 	)
 }
 
-// RESTStore returns the path to a REST store implementation for a singular resource.
-func (ws *WebServer) RESTStore() string {
-	return filepath.Join(ws.Store(), ws.R.FileName)
+// StoreDir returns the data store directory for the component.
+func (ws *WebServer) StoreDir() string {
+	return filepath.Join(ws.BaseDir(), "store")
 }
 
-// API returns the API directory for the component: pkg/api/<component>/<version>.
-func (ws *WebServer) API() string {
-	return filepath.Join("pkg/api", ws.Name, ws.Proj.D.APIVersion)
+// RESTStoreFile returns the path to a REST store implementation for a singular resource.
+func (ws *WebServer) RESTStoreFile() string {
+	return filepath.Join(ws.StoreDir(), ws.R.FileName)
+}
+
+// BaseDir returns the component base directory: internal/<component>.
+func (ws *WebServer) BaseDir() string {
+	return filepath.Join("internal", ws.Name)
+}
+
+// ModelDir returns the model directory for the component.
+func (ws *WebServer) ModelDir() string {
+	return filepath.Join(ws.BaseDir(), "model")
+}
+
+// PkgDir returns the pkg directory for the component.
+func (ws *WebServer) PkgDir() string {
+	return filepath.Join(ws.BaseDir(), "pkg")
+}
+
+// APIDir returns the API directory for the component: pkg/api/<component>/<version>.
+func (ws *WebServer) APIDir() string {
+	return filepath.Join("pkg/api", ws.Name, ws.Proj.M.APIVersion)
 }
 
 // PrepareRESTMetadata constructs REST metadata for a given kind.
 func (ws *WebServer) PrepareRESTMetadata(kindPath string) {
 	lastKind := filepath.Base(kindPath)
-	kind := strings.ReplaceAll(kindPath, "/", "_")
-	upperVer := strings.ToUpper(ws.Proj.D.APIVersion)
+	// kind := strings.ReplaceAll(kindPath, "/", "_")
+	upperVer := strings.ToUpper(ws.Proj.M.APIVersion)
 
-	r := REST{
-		SingularName:       strutil.UpperFirst(strutil.CamelCase(kind)),
-		SingularLowerFirst: strutil.CamelCase(kind),
-		SingularLower:      strings.ToLower(strutil.CamelCase(kind)),
-		PluralName:         flect.Pluralize(strutil.UpperFirst(strutil.CamelCase(kind))),
-		PluralLowerFirst:   flect.Pluralize(strutil.CamelCase(kind)),
-		PluralLower:        strings.ToLower(flect.Pluralize(strutil.CamelCase(kind))),
-		Last: Last{
-			SingularName:       strutil.UpperFirst(strutil.CamelCase(lastKind)),
+	r := RESTGen{
+		// SingularName:       strutil.UpperFirst(strutil.CamelCase(kind)),
+		// SingularLowerFirst: strutil.CamelCase(kind),
+		// SingularLower:      strings.ToLower(strutil.CamelCase(kind)),
+		// PluralName:         flect.Pluralize(strutil.UpperFirst(strutil.CamelCase(kind))),
+		// PluralLowerFirst:   flect.Pluralize(strutil.CamelCase(kind)),
+		// PluralLower:        strings.ToLower(flect.Pluralize(strutil.CamelCase(kind))),
+		REST: REST{
 			SingularLowerFirst: strutil.CamelCase(lastKind),
 			SingularLower:      strings.ToLower(strutil.CamelCase(lastKind)),
 			PluralName:         flect.Pluralize(strutil.UpperFirst(strutil.CamelCase(lastKind))),
@@ -193,15 +120,15 @@ func (ws *WebServer) PrepareRESTMetadata(kindPath string) {
 		},
 	}
 
-	r.GORMModel = r.SingularName + "M"
-	r.MapModelToAPIFunc = fmt.Sprintf("%sMTo%s%s", r.SingularName, r.SingularName, upperVer)
-	r.MapAPIToModelFunc = fmt.Sprintf("%s%sTo%sM", r.SingularName, upperVer, r.SingularName)
-	r.BusinessFactoryName = fmt.Sprintf("%s%s", r.SingularName, upperVer)
+	r.GORMModel = r.REST.SingularName + "M"
+	r.MapModelToAPIFunc = fmt.Sprintf("%sMTo%s%s", r.REST.SingularName, r.REST.SingularName, upperVer)
+	r.MapAPIToModelFunc = fmt.Sprintf("%s%sTo%sM", r.REST.SingularName, upperVer, r.REST.SingularName)
+	r.BusinessFactoryName = fmt.Sprintf("%s%s", r.REST.SingularName, upperVer)
 	r.ResourcePathPrefix = strings.ToLower(filepath.Dir(kindPath))
 	if r.ResourcePathPrefix == "." {
 		r.ResourcePathPrefix = ""
 	}
-	r.FileName = r.Last.SingularLower + ".go"
+	r.FileName = r.REST.SingularLower + ".go"
 	if r.ResourcePathPrefix != "" {
 		r.FileName = strings.ReplaceAll(r.ResourcePathPrefix, "/", "_") + "_" + r.FileName
 	}
@@ -209,8 +136,8 @@ func (ws *WebServer) PrepareRESTMetadata(kindPath string) {
 	ws.R = &r
 }
 
-// SetREST attaches REST metadata for later template rendering.
-func (ws *WebServer) SetREST(meta *REST) *WebServer {
+// SetRESTGen attaches REST metadata for later template rendering.
+func (ws *WebServer) SetRESTGen(meta *RESTGen) *WebServer {
 	ws.R = meta
 	return ws
 }
@@ -219,13 +146,13 @@ func (ws *WebServer) SetREST(meta *REST) *WebServer {
 // It drives file generation for this component.
 func (ws *WebServer) Pairs() map[string]string {
 	// Local shortcuts to reduce repetition.
-	apiDir := filepath.Join("pkg/api", ws.Name, ws.Proj.D.APIVersion)
+	apiDir := filepath.Join("pkg/api", ws.Name, ws.Proj.M.APIVersion)
 	internalPkg := ws.Proj.InternalPkg()
-	baseDir := ws.Base()
-	handlerDir := ws.Handler()
-	storeDir := ws.Store()
-	bizDir := ws.Biz()
-	pkgDir := ws.Pkg()
+	baseDir := ws.BaseDir()
+	handlerDir := ws.HandlerDir()
+	storeDir := ws.StoreDir()
+	bizDir := ws.BizDir()
+	pkgDir := ws.PkgDir()
 
 	pairs := map[string]string{}
 	add := func(dst, tpl string) {
@@ -247,7 +174,7 @@ func (ws *WebServer) Pairs() map[string]string {
 	add(filepath.Join(bizDir, "doc.go"), "/project/internal/apiserver/biz/doc.go")
 	add(filepath.Join(bizDir, "README.md"), "/project/internal/apiserver/biz/README.md")
 
-	add(filepath.Join(ws.Pkg(), "validation/validation.go"), "/project/internal/apiserver/pkg/validation/validation.go")
+	add(filepath.Join(ws.PkgDir(), "validation/validation.go"), "/project/internal/apiserver/pkg/validation/validation.go")
 
 	add(filepath.Join(internalPkg, "contextx/contextx.go"), "/project/internal/pkg/contextx/contextx.go")
 	add(filepath.Join(internalPkg, "contextx/doc.go"), "/project/internal/pkg/contextx/doc.go")
@@ -302,8 +229,8 @@ func (ws *WebServer) Pairs() map[string]string {
 		add(filepath.Join(internalPkg, "errno/user.go"), "/project/internal/pkg/errno/user.go")
 
 		// Model
-		add(filepath.Join(ws.Model(), "user.gen.go"), "/project/internal/apiserver/model/user.gen.go")
-		add(filepath.Join(ws.Model(), "hook_user.go"), "/project/internal/apiserver/model/hook_user.go")
+		add(filepath.Join(ws.ModelDir(), "user.gen.go"), "/project/internal/apiserver/model/user.gen.go")
+		add(filepath.Join(ws.ModelDir(), "hook_user.go"), "/project/internal/apiserver/model/hook_user.go")
 
 		// Handler + middlewares by framework
 		switch ws.WebFramework {
@@ -321,12 +248,12 @@ func (ws *WebServer) Pairs() map[string]string {
 		}
 
 		// Conversion/validation
-		add(filepath.Join(ws.Pkg(), "conversion/user.go"), "/project/internal/apiserver/pkg/conversion/user.go")
-		add(filepath.Join(ws.Pkg(), "validation/user.go"), "/project/internal/apiserver/pkg/validation/user.go")
+		add(filepath.Join(ws.PkgDir(), "conversion/user.go"), "/project/internal/apiserver/pkg/conversion/user.go")
+		add(filepath.Join(ws.PkgDir(), "validation/user.go"), "/project/internal/apiserver/pkg/validation/user.go")
 
 		// Biz + store
-		add(ws.RESTBiz(), "/project/internal/apiserver/biz/v1/user/user.go")
-		add(ws.RESTStore(), "/project/internal/apiserver/store/user.go")
+		add(ws.RESTBizFile(), "/project/internal/apiserver/biz/v1/user/user.go")
+		add(ws.RESTStoreFile(), "/project/internal/apiserver/store/user.go")
 	}
 
 	// Optional healthz endpoints.
@@ -352,7 +279,7 @@ func (ws *WebServer) Pairs() map[string]string {
 		add(filepath.Join(handlerDir, "websocket.go"), "/project/internal/apiserver/handler/gin/websocket.go")
 		add(filepath.Join(
 			bizDir,
-			ws.Proj.D.APIVersion,
+			ws.Proj.M.APIVersion,
 			"websocket/websocket.go"),
 			"/project/internal/apiserver/biz/v1/websocket/websocket.go",
 		)
@@ -410,30 +337,11 @@ func (ws *WebServer) Pairs() map[string]string {
 	}
 
 	if len(ws.Clients) > 0 {
-		add(filepath.Join(ws.Pkg(), "clientset/clientset.go"), "/project/internal/apiserver/pkg/clientset/clientset.go")
+		add(filepath.Join(ws.PkgDir(), "clientset/clientset.go"), "/project/internal/apiserver/pkg/clientset/clientset.go")
 	}
 
 	// Ensure api dir exists in VCS.
 	add(filepath.Join("api/.keep"), "/keep.tpl")
 
 	return pairs
-}
-
-// TemplateData is the rendering context for templates (project + one component).
-type TemplateData struct {
-	*Project
-	Web *WebServer
-}
-
-func (td *TemplateData) AbsPath(relPath string) string {
-	return td.Project.Join(relPath)
-}
-
-// GetComponentName extracts the component name from a binary name.
-func GetComponentName(binaryName string) string {
-	parts := strings.Split(binaryName, "-")
-	if len(parts) == 2 {
-		return parts[1]
-	}
-	return binaryName
 }

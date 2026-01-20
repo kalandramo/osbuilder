@@ -22,6 +22,10 @@ const (
 	WebFrameworkOneX = "onex"
 )
 
+const (
+	MQFrameworkKafka = "kafka"
+)
+
 // Deployment modes for releases and runtime.
 const (
 	DeploymentModeNone       = "none"
