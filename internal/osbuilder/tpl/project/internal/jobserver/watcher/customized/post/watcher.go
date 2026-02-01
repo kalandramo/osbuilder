@@ -21,7 +21,7 @@ import (
 const (
 	// DefaultWatchInterval is the default interval for checking jobs.
 	DefaultWatchInterval = "@every 1s"
-	{{$D.R.SingularName}}Watcher = "{{$D.R.SingularName}}"
+	{{$D.R.SingularName}}Watcher = "{{$D.R.SingularLower}}"
 )
 
 // Watcher implements a simplified {{$D.R.SingularLower}} monitoring system.
