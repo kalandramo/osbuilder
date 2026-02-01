@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	topicName  = "b-dms.bookmark.events.v1"
+	topicName  = "miniblog.bookmark.events.v1"
 	brokerAddr = "localhost:9092"
 )
 
