@@ -41,7 +41,7 @@ func (c *ServerConfig) NewJobServer() (server.Server, error) {
         watch.WithInitialize(initialize),
         watch.WithLogger(sloglogger.NewLogger()),
         watch.WithAutoMigrate(true),
-        watch.WithHealthzPort(c.WatchOptions.HealthzPort),
+        watch.WithHealthzAddr(c.WatchOptions.HealthzAddr),
         watch.WithMetricsAddr(c.WatchOptions.MetricsAddr),
     }
  

@@ -86,9 +86,9 @@ webServers:
     # 是否开启数据预加载代码示例
     withPreloader: true 
     # 内置的客户端集合，默认 false
-    clients:
-      - fake
-      - oss
+    #clients:
+      #- fake
+      #- oss
 
 # 异步任务服务
 jobServers:
@@ -98,9 +98,9 @@ jobServers:
     withPreloader: true
     # 是否禁用 CronJob，默认不禁用。
     disableCronJob: true
-    clients:
-      - fake
-      - oss
+    #clients:
+      #- fake
+      #- oss
 
 # 消息处理服务
 mqServers:
@@ -111,15 +111,15 @@ mqServers:
     withOTel: true
     withPreloader: true
     clients:
-      - fake
-      - oss
+      #- fake
+      #- oss
 
 # 命令行工具
 cliTools:
   - binaryName: mbctl
-    clients:
-      - fake
-      - oss
+    #clients:
+      #- fake
+      #- oss
 
 # 声明式 API 服务（暂未实现）
 #declServers:
