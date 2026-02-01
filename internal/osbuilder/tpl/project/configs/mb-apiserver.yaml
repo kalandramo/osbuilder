@@ -50,6 +50,13 @@ otel:
     format: json
     time-format: "2006-01-02 15:04:05"
     output: stdout # 支持 stdout, stderr, or file path
+{{- else }}
+slog:
+  level: debug # 支持 error, warn, info, debug
+  add-source: false
+  format: json # 支持 json 和text
+  time-format: "2006-01-02 15:04:05"
+  output: stdout # 支持 stdout 和文件路径
 {{- end}}
 {{- if eq .ServiceRegistry "polaris" }}
 polaris:
