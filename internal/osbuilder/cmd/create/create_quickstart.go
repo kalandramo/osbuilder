@@ -33,9 +33,10 @@ type QuickstartOptions struct {
 	MakefileMode   string // Makefile mode
 	DeploymentMode string // Deployment mode
 	RegistryPrefix string // Container registry prefix
-	Distroless     bool   // Use distroless base image
+	DockerfileMode string
+	DistrolessMode string // Use distroless base image
 
-	BinaryName      string   // Target web server/binary name
+	AppPrefix       string   // eg: mb
 	Kinds           []string // Resource kinds to generate (snake_case recommended)
 	WebFramework    string   // Web framework to use
 	WithUser        bool     // Include user management logic
@@ -91,10 +92,11 @@ func NewQuickstartOptions(io genericiooptions.IOStreams) *QuickstartOptions {
 		Author:         "孔令飞",
 		Email:          "colin404@foxmail.com",
 		MakefileMode:   "unstructured",
-		DeploymentMode: "docker",
+		DeploymentMode: "kubernetes",
 		RegistryPrefix: "", // Will be set to docker.io/<project-name> if empty
-		Distroless:     false,
-		BinaryName:     "mb-apiserver",
+		DockerfileMode: "combined",
+		DistrolessMode: "auto",
+		AppPrefix:      "mb",
 		Kinds: []string{
 			"post", "comment", "tag", "follow", "follower", "friend",
 			"block", "like", "bookmark", "share", "report", "vote",
@@ -138,8 +140,9 @@ func NewCmdQuickstart(factory cmdutil.Factory, ioStreams genericiooptions.IOStre
 	cmd.Flags().StringVar(&o.MakefileMode, "makefile-mode", o.MakefileMode, "Makefile mode (none, unstructured, structured)")
 	cmd.Flags().StringVar(&o.DeploymentMode, "deployment-mode", o.DeploymentMode, "Deployment mode (docker, kubernetes, systemd)")
 	cmd.Flags().StringVar(&o.RegistryPrefix, "registry-prefix", o.RegistryPrefix, "Container registry prefix (default: docker.io/<project-name>)")
-	cmd.Flags().BoolVar(&o.Distroless, "distroless", o.Distroless, "Use distroless base image for containers")
-	cmd.Flags().StringVar(&o.BinaryName, "binary-name", o.BinaryName, "Target binary/web server name (e.g., mb-apiserver).")
+	cmd.Flags().StringVar(&o.DockerfileMode, "dockerfile-mode", o.DockerfileMode, "Specify the dockerfile mode(options: none, runtime-only, multi-stage, combined)")
+	cmd.Flags().StringVar(&o.DistrolessMode, "distroless-mode", o.DistrolessMode, "Base image selection mode (options: always, never, auto)")
+	cmd.Flags().StringVar(&o.AppPrefix, "app-prefix", o.AppPrefix, "The common prefix for application binaries (e.g., set 'mb' for 'mb-apiserver').")
 	cmd.Flags().StringSliceVarP(&o.Kinds, "kinds", "", o.Kinds, "Resource kinds to generate in snake_case (e.g., cron_job).")
 	cmd.Flags().StringVar(&o.WebFramework, "web-framework", o.WebFramework, "Web framework to use (gin, grpc, grpc-gateway)")
 	cmd.Flags().BoolVar(&o.WithUser, "with-user", o.WithUser, "Include user management, authentication and authorization logic")
@@ -210,17 +213,36 @@ func (o *QuickstartOptions) Run(f cmdutil.Factory, ioStreams genericiooptions.IO
 		fmt.Printf("Error executing project command: %v\n", err)
 	}
 
-	apiCmd := NewCmdAPI(f, ioStreams)
-	apiCmd.SetArgs([]string{
+	commonArgs := []string{
 		"--root-dir", o.ProjectRootDir,
-		"--binary-name", o.BinaryName,
 		"--kinds", strings.Join(o.Kinds, ","),
 		"--show-tips=false",
-	})
-
-	// 执行命令
+	}
+	// 添加 API 接口
+	apiCmd := NewCmdAPI(f, ioStreams)
+	apiCmd.SetArgs(commonArgs)
 	if err := apiCmd.Execute(); err != nil {
 		fmt.Printf("Error executing api command: %v\n", err)
+	}
+
+	// 添加异步任务
+	jobCmd := NewCmdJob(f, ioStreams)
+	jobCmd.SetArgs(commonArgs)
+	if err := jobCmd.Execute(); err != nil {
+		fmt.Printf("Error executing job command: %v\n", err)
+	}
+
+	// 添加消息队列
+	mqCmd := NewCmdMQ(f, ioStreams)
+	mqCmd.SetArgs(commonArgs)
+	if err := mqCmd.Execute(); err != nil {
+		fmt.Printf("Error executing message queue command: %v\n", err)
+	}
+
+	cmdCmd := NewCmdCmd(f, ioStreams)
+	cmdCmd.SetArgs(commonArgs)
+	if err := cmdCmd.Execute(); err != nil {
+		fmt.Printf("Error executing cmd command: %v\n", err)
 	}
 
 	projectOptions := NewProjectOptions(ioStreams)
@@ -255,12 +277,13 @@ func (o *QuickstartOptions) applyQuickstartOptions(project *types.Project) *type
 	if o.RegistryPrefix != "" {
 		project.Metadata.Image.RegistryPrefix = o.RegistryPrefix
 	}
-	project.Metadata.Image.Distroless = o.Distroless
+	project.Metadata.Image.DockerfileMode = o.DockerfileMode
+	project.Metadata.Image.DistrolessMode = o.DistrolessMode
 
 	// 修改 WebServers 配置
 	for i := range project.WebServers {
-		if o.BinaryName != "" {
-			project.WebServers[i].BinaryName = o.BinaryName
+		if o.AppPrefix != "" {
+			project.WebServers[i].BinaryName = fmt.Sprintf("%s-apiserver$d", o.AppPrefix, i)
 		}
 		if o.WebFramework != "" {
 			project.WebServers[i].WebFramework = o.WebFramework
@@ -273,6 +296,52 @@ func (o *QuickstartOptions) applyQuickstartOptions(project *types.Project) *type
 		if o.ServiceRegistry != "" {
 			project.WebServers[i].ServiceRegistry = o.ServiceRegistry
 		}
+	}
+
+	// 修改 WebServers 配置
+	for i := range project.WebServers {
+		if o.AppPrefix != "" {
+			project.WebServers[i].BinaryName = fmt.Sprintf("%s-apiserver$d", o.AppPrefix, i)
+		}
+		if o.WebFramework != "" {
+			project.WebServers[i].WebFramework = o.WebFramework
+		}
+		project.WebServers[i].WithUser = o.WithUser
+		project.WebServers[i].WithOTel = o.WithOtel
+		project.WebServers[i].WithWS = o.WithWS
+		project.WebServers[i].WithPreloader = o.WithPreloader
+		project.WebServers[i].Clients = o.Clients
+		if o.ServiceRegistry != "" {
+			project.WebServers[i].ServiceRegistry = o.ServiceRegistry
+		}
+	}
+
+	// 修改 JobServers 配置
+	for i := range project.JobServers {
+		if o.AppPrefix != "" {
+			project.JobServers[i].BinaryName = fmt.Sprintf("%s-jobserver$d", o.AppPrefix, i)
+		}
+		project.JobServers[i].WithOTel = o.WithOtel
+		project.JobServers[i].WithPreloader = o.WithPreloader
+		project.JobServers[i].Clients = o.Clients
+	}
+
+	// 修改 MQServers 配置
+	for i := range project.MQServers {
+		if o.AppPrefix != "" {
+			project.MQServers[i].BinaryName = fmt.Sprintf("%s-mqserver$d", o.AppPrefix, i)
+		}
+		project.MQServers[i].WithOTel = o.WithOtel
+		project.MQServers[i].WithPreloader = o.WithPreloader
+		project.MQServers[i].Clients = o.Clients
+	}
+
+	// 修改 CLITools 配置
+	for i := range project.CLITools {
+		if o.AppPrefix != "" {
+			project.CLITools[i].BinaryName = fmt.Sprintf("%sctl$d", o.AppPrefix, i)
+		}
+		project.CLITools[i].Clients = o.Clients
 	}
 
 	return project

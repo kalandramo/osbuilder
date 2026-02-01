@@ -12,10 +12,10 @@ import (
 )
 
 // Healthz 服务健康检查.
-func (h *Handler) Healthz(ctx context.Context, rq *emptypb.Empty) (*{{.D.APIAlias}}.HealthzResponse, error) {
+func (h *Handler) Healthz(ctx context.Context, rq *emptypb.Empty) (*{{.M.APIAlias}}.HealthzResponse, error) {
 	slog.InfoContext(ctx, "Healthz handler is called", "method", "Healthz", "status", "healthy")
-	return &{{.D.APIAlias}}.HealthzResponse{
-		Status:    {{.D.APIAlias}}.ServiceStatus_Healthy,
+	return &{{.M.APIAlias}}.HealthzResponse{
+		Status:    {{.M.APIAlias}}.ServiceStatus_Healthy,
 		Timestamp: time.Now().Format(time.DateTime),
 	}, nil
 }

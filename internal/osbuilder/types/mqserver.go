@@ -1,27 +1,21 @@
 package types
 
 import (
-	"fmt"
 	"path/filepath"
-	"strings"
-
-	"github.com/duke-git/lancet/v2/strutil"
-	"github.com/gobuffalo/flect"
-	stringsutil "github.com/onexstack/onexstack/pkg/util/strings"
 
 	"github.com/onexstack/osbuilder/internal/osbuilder/known"
 )
 
 // MQServer describes a mq server component to generate (HTTP/gRPC/etc).
 type MQServer struct {
-	// BinaryName is the CLI binary name (e.g., "mb-apiserver").
+	// BinaryName is the CLI binary name (e.g., "mb-mqserver").
 	BinaryName string `yaml:"binaryName"`
 	// MQFramework selects the framework (e.g., gin, grpc).
 	MQFramework string `yaml:"mqFramework"`
 	// StorageType selects backing storage (e.g., memory, mysql).
 	StorageType string `yaml:"storageType"`
 	// Feature flags
-	WithHealthz   bool     `yaml:"withHealthz,omitempty"`
+	// WithHealthz   bool     `yaml:"withHealthz,omitempty"`
 	WithOTel      bool     `yaml:"withOTel,omitempty"`
 	WithPreloader bool     `yaml:"withPreloader,omitempty"`
 	Clients       []string `yaml:"clients,omitempty"`
@@ -53,7 +47,7 @@ func (mq *MQServer) RESTBizFile() string {
 		mq.Proj.M.APIVersion,
 		mq.R.ResourcePathPrefix,
 		mq.R.REST.SingularLower,
-		mq.R.FileName,
+		mq.R.REST.SingularLower+".go",
 	)
 }
 
@@ -89,47 +83,25 @@ func (mq *MQServer) APIDir() string {
 
 // PrepareRESTMetadata constructs REST metadata for a given kind.
 func (mq *MQServer) PrepareRESTMetadata(kindPath string) {
-	lastKind := filepath.Base(kindPath)
-	// kind := strings.ReplaceAll(kindPath, "/", "_")
-	upperVer := strings.ToUpper(mq.Proj.M.APIVersion)
-
-	r := RESTGen{
-		// SingularName:       strutil.UpperFirst(strutil.CamelCase(kind)),
-		// SingularLowerFirst: strutil.CamelCase(kind),
-		// SingularLower:      strings.ToLower(strutil.CamelCase(kind)),
-		// PluralName:         flect.Pluralize(strutil.UpperFirst(strutil.CamelCase(kind))),
-		// PluralLowerFirst:   flect.Pluralize(strutil.CamelCase(kind)),
-		// PluralLower:        strings.ToLower(flect.Pluralize(strutil.CamelCase(kind))),
-		REST: REST{
-			SingularName:       strutil.UpperFirst(strutil.CamelCase(lastKind)),
-			SingularLowerFirst: strutil.CamelCase(lastKind),
-			SingularLower:      strings.ToLower(strutil.CamelCase(lastKind)),
-			PluralName:         flect.Pluralize(strutil.UpperFirst(strutil.CamelCase(lastKind))),
-			PluralLowerFirst:   flect.Pluralize(strutil.CamelCase(lastKind)),
-			PluralLower:        strings.ToLower(flect.Pluralize(strutil.CamelCase(lastKind))),
-		},
-	}
-
-	r.GORMModel = r.REST.SingularName + "M"
-	r.MapModelToAPIFunc = fmt.Sprintf("%sMTo%s%s", r.REST.SingularName, r.REST.SingularName, upperVer)
-	r.MapAPIToModelFunc = fmt.Sprintf("%s%sTo%sM", r.REST.SingularName, upperVer, r.REST.SingularName)
-	r.BusinessFactoryName = fmt.Sprintf("%s%s", r.REST.SingularName, upperVer)
-	r.ResourcePathPrefix = strings.ToLower(filepath.Dir(kindPath))
-	if r.ResourcePathPrefix == "." {
-		r.ResourcePathPrefix = ""
-	}
-	r.FileName = r.REST.SingularLower + ".go"
-	if r.ResourcePathPrefix != "" {
-		r.FileName = strings.ReplaceAll(r.ResourcePathPrefix, "/", "_") + "_" + r.FileName
-	}
-
-	mq.R = &r
+	mq.R = prepareRESTMetadata(mq.Proj.M.APIVersion, kindPath)
 }
 
 // SetRESTGen attaches REST metadata for later template rendering.
 func (mq *MQServer) SetRESTGen(meta *RESTGen) *MQServer {
 	mq.R = meta
 	return mq
+}
+
+func (mq *MQServer) GetR() *RESTGen {
+	return mq.R
+}
+
+func (mq *MQServer) GetProj() *Project {
+	return mq.Proj
+}
+
+func (mq *MQServer) GetClients() []string {
+	return mq.Clients
 }
 
 // Pairs returns a map of destination relative paths to template paths.
@@ -141,6 +113,7 @@ func (mq *MQServer) Pairs() map[string]string {
 	baseDir := mq.BaseDir()
 	handlerDir := mq.HandlerDir()
 	storeDir := mq.StoreDir()
+	modelDir := mq.ModelDir()
 	bizDir := mq.BizDir()
 	pkgDir := mq.PkgDir()
 
@@ -150,101 +123,70 @@ func (mq *MQServer) Pairs() map[string]string {
 	}
 
 	// Common command and component scaffolding.
-	add(filepath.Join("cmd", mq.BinaryName, "app/options/options.go"), "/project/cmd/mb-apiserver/app/options/options.go")
-	add(filepath.Join("cmd", mq.BinaryName, "app/server.go"), "/project/cmd/mb-apiserver/app/server.go")
-	add(filepath.Join("cmd", mq.BinaryName, "main.go"), "/project/cmd/mb-apiserver/main.go")
-	add(filepath.Join(mq.Proj.Configs(), mq.BinaryName+".yaml"), "/project/configs/mb-apiserver.yaml")
+	add(filepath.Join("cmd", mq.BinaryName, "main.go"), "/project/cmd/mb-mqserver/main.go")
+	add(filepath.Join("cmd", mq.BinaryName, "app/server.go"), "/project/cmd/mb-mqserver/app/server.go")
+	add(filepath.Join("cmd", mq.BinaryName, "app/options/options.go"), "/project/cmd/mb-mqserver/app/options/options.go")
+
+	add(filepath.Join(mq.Proj.Configs(), mq.BinaryName+".yaml"), "/project/configs/mb-mqserver.yaml")
+
+	add(filepath.Join(modelDir, "fake.go"), "/project/internal/mqserver/model/fake.go")
 
 	// Core internal packages reused across frameworks.
-	add(filepath.Join(storeDir, "doc.go"), "/project/internal/apiserver/store/doc.go")
-	add(filepath.Join(storeDir, "store.go"), "/project/internal/apiserver/store/store.go")
-	add(filepath.Join(storeDir, "README.md"), "/project/internal/apiserver/store/README.md")
+	add(filepath.Join(storeDir, "doc.go"), "/project/internal/mqserver/store/doc.go")
+	add(filepath.Join(storeDir, "store.go"), "/project/internal/mqserver/store/store.go")
+	add(filepath.Join(storeDir, "fake.go"), "/project/internal/mqserver/store/fake.go")
+	add(filepath.Join(storeDir, "README.md"), "/project/internal/mqserver/store/README.md")
 
-	add(filepath.Join(bizDir, "biz.go"), "/project/internal/apiserver/biz/biz.go")
-	add(filepath.Join(bizDir, "doc.go"), "/project/internal/apiserver/biz/doc.go")
-	add(filepath.Join(bizDir, "README.md"), "/project/internal/apiserver/biz/README.md")
+	add(filepath.Join(bizDir, "biz.go"), "/project/internal/mqserver/biz/biz.go")
+	add(filepath.Join(bizDir, "doc.go"), "/project/internal/mqserver/biz/doc.go")
+	add(filepath.Join(bizDir, "README.md"), "/project/internal/mqserver/biz/README.md")
 
-	add(filepath.Join(mq.PkgDir(), "validation/validation.go"), "/project/internal/apiserver/pkg/validation/validation.go")
+	add(filepath.Join(mq.PkgDir(), "validation/validation.go"), "/project/internal/mqserver/pkg/validation/validation.go")
 
-	add(filepath.Join(internalPkg, "contextx/contextx.go"), "/project/internal/pkg/contextx/contextx.go")
-	add(filepath.Join(internalPkg, "contextx/doc.go"), "/project/internal/pkg/contextx/doc.go")
-	add(filepath.Join(internalPkg, "known/doc.go"), "/project/internal/pkg/known/doc.go")
-	add(filepath.Join(internalPkg, "known/known.go"), "/project/internal/pkg/known/known.go")
+	add(filepath.Join(internalPkg, "kafka/kafka.go"), "/project/internal/pkg/kafka/kafka.go")
 
-	add(filepath.Join(internalPkg, "rid/doc.go"), "/project/internal/pkg/rid/doc.go")
-	add(filepath.Join(internalPkg, "rid/example_test.go"), "/project/internal/pkg/rid/example_test.go")
-	add(filepath.Join(internalPkg, "rid/rid.go"), "/project/internal/pkg/rid/rid.go")
-	add(filepath.Join(internalPkg, "rid/rid_test.go"), "/project/internal/pkg/rid/rid_test.go")
-	add(filepath.Join(internalPkg, "rid/salt.go"), "/project/internal/pkg/rid/salt.go")
-
-	add(filepath.Join(internalPkg, "errno/doc.go"), "/project/internal/pkg/errno/doc.go")
-	add(filepath.Join(internalPkg, "errno/code.go"), "/project/internal/pkg/errno/code.go")
-
-	add(filepath.Join(baseDir, "server.go"), "/project/internal/apiserver/server.go")
-	add(filepath.Join(baseDir, "wire.go"), "/project/internal/apiserver/wire.go")
-	add(filepath.Join(baseDir, "wire_gen.go"), "/project/internal/apiserver/wire_gen.go")
+	add(filepath.Join(baseDir, "server.go"), "/project/internal/mqserver/server.go")
+	add(filepath.Join(baseDir, "wire.go"), "/project/internal/mqserver/wire.go")
+	add(filepath.Join(baseDir, "wire_gen.go"), "/project/internal/mqserver/wire_gen.go")
 
 	// Default proto for examples.
-	add(filepath.Join(apiDir, "example.proto"), "/project/pkg/api/apiserver/v1/example.proto")
+	add(filepath.Join(apiDir, "example.proto"), "/project/pkg/api/mqserver/v1/example.proto")
 
-	if stringsutil.StringIn(mq.Proj.Metadata.DeploymentMethod, []string{known.DeploymentModeDocker, known.DeploymentModeKubernetes}) {
-		switch mq.Proj.Metadata.Image.DockerfileMode {
-		case known.DockerfileModeNone:
-			add(filepath.Join("build", "docker", mq.BinaryName, ".keep"), "/keep.tpl")
-		case known.DockerfileModeRuntimeOnly:
-			add(filepath.Join("build", "docker", mq.BinaryName, "Dockerfile"), "/project/build/docker/mb-apiserver/Dockerfile.runtime-only")
-		case known.DockerfileModeMultiStage:
-			add(filepath.Join("build", "docker", mq.BinaryName, "Dockerfile"), "/project/build/docker/mb-apiserver/Dockerfile.multi-stage")
-		case known.DockerfileModeCombined:
-			add(filepath.Join("build", "docker", mq.BinaryName, "Dockerfile"), "/project/build/docker/mb-apiserver/Dockerfile.multi-stage")
-			add(filepath.Join("build", "docker", mq.BinaryName, "Dockerfile.runtime-only"), "/project/build/docker/mb-apiserver/Dockerfile.runtime-only")
-		default:
+	AddGenericPackages(pairs, internalPkg)
+	GenerateKubernetesManifests(pairs, mq.Proj.Metadata, mq.BinaryName)
+
+	/*
+		// Optional healthz endpoints.
+		if mq.WithHealthz {
+			add(filepath.Join(apiDir, "healthz.proto"), "/project/pkg/api/mqserver/v1/healthz.proto")
 		}
-	}
-
-	if mq.Proj.Metadata.DeploymentMethod == known.DeploymentModeKubernetes {
-		add(filepath.Join("manifests", mq.BinaryName, mq.BinaryName+".deployment.yaml"), "/project/manifests/mb-apiserver/mb-apiserver.deployment.yaml")
-		add(filepath.Join("manifests", mq.BinaryName, mq.BinaryName+".service.yaml"), "/project/manifests/mb-apiserver/mb-apiserver.service.yaml")
-		add(filepath.Join("manifests", mq.BinaryName, mq.BinaryName+".configmap.yaml"), "/project/manifests/mb-apiserver/mb-apiserver.configmap.yaml")
-		add(filepath.Join("manifests", "nettool.deployment.yaml"), "/project/manifests/nettool.deployment.yaml")
-		add(filepath.Join("manifests", "nginx.deployment.yaml"), "/project/manifests/nginx.deployment.yaml")
-	}
-
-	// Optional healthz endpoints.
-	if mq.WithHealthz {
-		add(filepath.Join(apiDir, "healthz.proto"), "/project/pkg/api/apiserver/v1/healthz.proto")
-	}
+	*/
 
 	if mq.WithOTel {
-		add(filepath.Join(pkgDir, "metrics/metrics.go"), "/project/internal/apiserver/pkg/metrics/metrics.go")
+		add(filepath.Join(pkgDir, "metrics/metrics.go"), "/project/internal/mqserver/pkg/metrics/metrics.go")
 	}
 
 	if mq.WithPreloader {
-		add(filepath.Join(pkgDir, "asyncstore/asyncstore.go"), "/project/internal/apiserver/pkg/asyncstore/asyncstore.go")
-		add(filepath.Join(pkgDir, "asyncstore/fake_store.go"), "/project/internal/apiserver/pkg/asyncstore/fake_store.go")
-		add(filepath.Join(apiDir, "fake.proto"), "/project/pkg/api/apiserver/v1/fake.proto")
+		add(filepath.Join(pkgDir, "asyncstore/asyncstore.go"), "/project/internal/mqserver/pkg/asyncstore/asyncstore.go")
+		add(filepath.Join(pkgDir, "asyncstore/fake_store.go"), "/project/internal/mqserver/pkg/asyncstore/fake_store.go")
+		add(filepath.Join(apiDir, "fake.proto"), "/project/pkg/api/mqserver/v1/fake.proto")
 	}
 
 	// Framework-specific scaffolding.
 	switch mq.MQFramework {
 	case known.MQFrameworkKafka:
-		add(filepath.Join(internalPkg, "middleware/gin/header.go"), "/project/internal/pkg/middleware/gin/header.go")
-		add(filepath.Join(internalPkg, "middleware/gin/requestid.go"), "/project/internal/pkg/middleware/gin/requestid.go")
-		add(filepath.Join(baseDir, "httpserver.go"), "/project/internal/apiserver/ginserver.go")
-		add(filepath.Join(handlerDir, "handler.go"), "/project/internal/apiserver/handler/gin/handler.go")
-		add(filepath.Join(mq.Proj.Scripts(), "startup-test.sh"), "/project/scripts/startup-test.sh")
+		add(filepath.Join(baseDir, "mqserver.go"), "/project/internal/mqserver/kafkaserver.go")
+		add(filepath.Join(handlerDir, "handler.go"), "/project/internal/mqserver/handler/kafka/handler.go")
 		if mq.WithOTel {
-			add(filepath.Join(internalPkg, "middleware/gin/context.go"), "/project/internal/pkg/middleware/gin/context.go")
+			// add(filepath.Join(internalPkg, "middleware/gin/context.go"), "/project/internal/pkg/middleware/gin/context.go")
 		}
 	default:
-		// Fallback to gRPC server scaffolding.
-		add(filepath.Join(apiDir, mq.Name+".proto"), "/project/pkg/api/apiserver/v1/apiserver.proto")
-		add(filepath.Join(baseDir, "grpcserver.go"), "/project/internal/apiserver/grpcserver.go")
-		add(filepath.Join(handlerDir, "handler.go"), "/project/internal/apiserver/handler/grpc/handler.go")
+		add(filepath.Join(baseDir, "mqserver.go"), "/project/internal/mqserver/kafkaserver.go.go")
+		add(filepath.Join(handlerDir, "handler.go"), "/project/internal/mqserver/handler/kafka/handler.go")
 	}
 
 	if len(mq.Clients) > 0 {
-		add(filepath.Join(mq.PkgDir(), "clientset/clientset.go"), "/project/internal/apiserver/pkg/clientset/clientset.go")
+		add(filepath.Join(mq.PkgDir(), "clientset/clientset.go"), "/project/internal/mqserver/pkg/clientset/clientset.go")
 	}
 
 	// Ensure api dir exists in VCS.

@@ -1,9 +1,10 @@
+{{- $D := or .Web .MQ .Job -}}
 // Healthz API definition, which includes health check response messages and status.
 syntax = "proto3"; // Specifies the syntax version used by this file.
 
-package {{.Web.Name}}.{{.D.APIVersion}};
+package {{$D.Name}}.{{.M.APIVersion}};
 
-option go_package = "{{.D.ModuleName}}/pkg/api/{{.Web.Name}}/{{.D.APIVersion}};{{.D.APIVersion}}";
+option go_package = "{{.M.ModuleName}}/pkg/api/{{$D.Name}}/{{.M.APIVersion}};{{.M.APIVersion}}";
 
 // ServiceStatus represents the health status of the service.
 enum ServiceStatus {

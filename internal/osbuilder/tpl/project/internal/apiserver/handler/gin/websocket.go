@@ -16,8 +16,8 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-    "{{.D.ModuleName}}/internal/pkg/contextx"
-    "{{.D.ModuleName}}/internal/pkg/errno"
+    "{{.M.ModuleName}}/internal/pkg/contextx"
+    "{{.M.ModuleName}}/internal/pkg/errno"
     {{.Web.APIImportPath}}
 )
 

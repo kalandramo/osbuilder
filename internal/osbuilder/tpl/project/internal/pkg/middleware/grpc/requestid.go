@@ -8,8 +8,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	"{{.D.ModuleName}}/internal/pkg/contextx"
-	"{{.D.ModuleName}}/internal/pkg/known"
+	"{{.M.ModuleName}}/internal/pkg/contextx"
+	"{{.M.ModuleName}}/internal/pkg/known"
 )
 
 // RequestIDInterceptor 是一个 gRPC 拦截器，用于设置请求 ID.

@@ -33,7 +33,7 @@ func main() {
 	defer conn.Close()
 
 	// 创建 gRPC 客户端
-	cli := {{.D.APIAlias}}.New{{.Web.GRPCServiceName}}Client(conn)
+	cli := {{.M.APIAlias}}.New{{.Web.GRPCServiceName}}Client(conn)
 	ctx := context.Background()
 
 	// 执行操作
@@ -99,10 +99,10 @@ func checkError(err error, msg string) {
 }
 
 // create{{.Web.R.SingularName}} 创建一个新的 {{.Web.R.SingularName}}
-func create{{.Web.R.SingularName}}(ctx context.Context, cli {{.D.APIAlias}}.{{.Web.GRPCServiceName}}Client) string {
+func create{{.Web.R.SingularName}}(ctx context.Context, cli {{.M.APIAlias}}.{{.Web.GRPCServiceName}}Client) string {
 	log.Println("Creating new {{.Web.R.SingularLower}}...")
 
-	req := &{{.D.APIAlias}}.Create{{.Web.R.SingularName}}Request{
+	req := &{{.M.APIAlias}}.Create{{.Web.R.SingularName}}Request{
 		// 设置请求参数
 	}
 
@@ -114,10 +114,10 @@ func create{{.Web.R.SingularName}}(ctx context.Context, cli {{.D.APIAlias}}.{{.W
 }
 
 // list{{.Web.R.SingularName}} 列出所有 {{.Web.R.SingularName}}
-func list{{.Web.R.SingularName}}(ctx context.Context, cli {{.D.APIAlias}}.{{.Web.GRPCServiceName}}Client) {
+func list{{.Web.R.SingularName}}(ctx context.Context, cli {{.M.APIAlias}}.{{.Web.GRPCServiceName}}Client) {
 	log.Println("Listing {{.Web.R.PluralLower}}...")
 
-	req := &{{.D.APIAlias}}.List{{.Web.R.SingularName}}Request{
+	req := &{{.M.APIAlias}}.List{{.Web.R.SingularName}}Request{
 		Offset: defaultPage,
 		Limit:  defaultSize,
 	}
@@ -133,10 +133,10 @@ func list{{.Web.R.SingularName}}(ctx context.Context, cli {{.D.APIAlias}}.{{.Web
 }
 
 // delete{{.Web.R.SingularName}} 删除一个指定的 {{.Web.R.SingularName}}
-func delete{{.Web.R.SingularName}}(ctx context.Context, cli {{.D.APIAlias}}.{{.Web.GRPCServiceName}}Client,  {{.Web.R.SingularLowerFirst}}ID string) {
+func delete{{.Web.R.SingularName}}(ctx context.Context, cli {{.M.APIAlias}}.{{.Web.GRPCServiceName}}Client,  {{.Web.R.SingularLowerFirst}}ID string) {
 	log.Printf("Deleting {{.Web.R.SingularLower}} with ID: %s...",  {{.Web.R.SingularLowerFirst}}ID)
 
-	req := &{{.D.APIAlias}}.Delete{{.Web.R.SingularName}}Request{
+	req := &{{.M.APIAlias}}.Delete{{.Web.R.SingularName}}Request{
 		{{.Web.R.SingularName}}IDs: []string{ {{.Web.R.SingularLowerFirst}}ID},
 	}
 

@@ -14,8 +14,8 @@ import (
 	"google.golang.org/grpc/metadata"
 	"k8s.io/utils/ptr"
 
-	"{{.D.ModuleName}}/examples/helper"
-	"{{.D.ModuleName}}/internal/pkg/known"
+	"{{.M.ModuleName}}/examples/helper"
+	"{{.M.ModuleName}}/internal/pkg/known"
 	{{.Web.APIImportPath}}
 )
 
@@ -34,7 +34,7 @@ func main() {
 	}
 	defer conn.Close() // 确保连接在函数结束时关闭
 
-	client := {{.D.APIAlias}}.New{{.Web.GRPCServiceName}}Client(conn) // 创建 {{.Web.GRPCServiceName}} 客户端
+	client := {{.M.APIAlias}}.New{{.Web.GRPCServiceName}}Client(conn) // 创建 {{.Web.GRPCServiceName}} 客户端
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 
@@ -49,7 +49,7 @@ func main() {
 	}
 	log.Printf("[CreateUser     ] Success to create user, userID: %s", createUserResponse.UserID)
 
-	loginResponse, err := client.Login(ctx, &{{.D.APIAlias}}.LoginRequest{
+	loginResponse, err := client.Login(ctx, &{{.M.APIAlias}}.LoginRequest{
 		Username: createUserRequest.Username,
 		Password: createUserRequest.Password,
 	})
@@ -68,10 +68,10 @@ func main() {
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	defer func() {
-		_, _ = client.DeleteUser(ctx, &{{.D.APIAlias}}.DeleteUserRequest{UserID: createUserResponse.UserID})
+		_, _ = client.DeleteUser(ctx, &{{.M.APIAlias}}.DeleteUserRequest{UserID: createUserResponse.UserID})
 	}()
 
-	refreshTokenResponse, err := client.RefreshToken(ctx, &{{.D.APIAlias}}.RefreshTokenRequest{})
+	refreshTokenResponse, err := client.RefreshToken(ctx, &{{.M.APIAlias}}.RefreshTokenRequest{})
 	if err != nil {
 		log.Printf("Failed to refresh token: %v", err)
 		return
@@ -83,7 +83,7 @@ func main() {
 	log.Printf("[RefreshToken   ] Success to refresh token")
 
 	// 请求 UpdateUser 接口
-	_, err = client.UpdateUser(ctx, &{{.D.APIAlias}}.UpdateUserRequest{
+	_, err = client.UpdateUser(ctx, &{{.M.APIAlias}}.UpdateUserRequest{
 		UserID:   createUserResponse.UserID,
 		Nickname: ptr.To("令飞孔"),
 	})
@@ -95,7 +95,7 @@ func main() {
 
 	// 请求 ChangePassword 接口
 	newPassword := "onex(#)888"
-	_, err = client.ChangePassword(ctx, &{{.D.APIAlias}}.ChangePasswordRequest{
+	_, err = client.ChangePassword(ctx, &{{.M.APIAlias}}.ChangePasswordRequest{
 		UserID:      createUserResponse.UserID,
 		OldPassword: createUserRequest.Password,
 		NewPassword: newPassword,
@@ -106,7 +106,7 @@ func main() {
 	}
 	log.Printf("[ChangePassword ] Success to change password")
 
-	loginResponse, err = client.Login(ctx, &{{.D.APIAlias}}.LoginRequest{
+	loginResponse, err = client.Login(ctx, &{{.M.APIAlias}}.LoginRequest{
 		Username: createUserRequest.Username,
 		Password: newPassword,
 	})
@@ -120,7 +120,7 @@ func main() {
 	// 将 metadata 附加到上下文中
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
-	getUserResponse, err := client.GetUser(ctx, &{{.D.APIAlias}}.GetUserRequest{UserID: createUserResponse.UserID})
+	getUserResponse, err := client.GetUser(ctx, &{{.M.APIAlias}}.GetUserRequest{UserID: createUserResponse.UserID})
 	if err != nil {
 		log.Printf("Failed to get user: %v", err)
 		return
@@ -131,14 +131,14 @@ func main() {
 	}
 	log.Printf("[GetUser        ] Success to get user: %v", createUserResponse.UserID)
 
-	_, err = client.ListUser(ctx, &{{.D.APIAlias}}.ListUserRequest{Offset: 0, Limit: *limit})
+	_, err = client.ListUser(ctx, &{{.M.APIAlias}}.ListUserRequest{Offset: 0, Limit: *limit})
 	if err != nil {
 	    log.Printf("Failed to list user: %v", err)
 	}
     log.Printf("[ListUser       ] Success to list users")
 
 	// 请求 DeleteUser 接口
-	_, err = client.DeleteUser(ctx, &{{.D.APIAlias}}.DeleteUserRequest{UserID: createUserResponse.UserID})
+	_, err = client.DeleteUser(ctx, &{{.M.APIAlias}}.DeleteUserRequest{UserID: createUserResponse.UserID})
 	if err != nil {
 		log.Printf("Failed to delete user: %v", err)
 		return

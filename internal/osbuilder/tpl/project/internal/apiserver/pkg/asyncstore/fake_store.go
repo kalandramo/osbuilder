@@ -1,3 +1,4 @@
+{{- $D := or .Web .MQ .Job -}}
 package asyncstore
 
 import (
@@ -7,14 +8,14 @@ import (
 
 	"github.com/brianvoe/gofakeit/v7"
 
-	{{.Web.APIImportPath}}
+	{{$D.APIImportPath}}
 )
 
 // FakeStore implements an in-memory storage mechanism for FakeData.
 // It uses atomic.Value to ensure concurrent-safe and consistent access
 // during data synchronization.
 type FakeStore struct {
-	data atomic.Value // Stores map[string]*{{.D.APIAlias}}.FakeData
+	data atomic.Value // Stores map[string]*{{.M.APIAlias}}.FakeData
 	// A mutex might still be needed for other operations not covered by atomic.Value,
 	// or for protecting other fields of FakeStore.
 	// For just replacing the map, atomic.Value is sufficient and better.
@@ -23,7 +24,7 @@ type FakeStore struct {
 // NewFakeStore creates a new instance of FakeStore.
 func NewFakeStore() *FakeStore {
 	fs := &FakeStore{}
-	fs.data.Store(make(map[string]*{{.D.APIAlias}}.FakeData)) // Initialize with an empty map
+	fs.data.Store(make(map[string]*{{.M.APIAlias}}.FakeData)) // Initialize with an empty map
 	return fs
 }
 
@@ -32,11 +33,11 @@ func NewFakeStore() *FakeStore {
 func (s *FakeStore) Sync(ctx context.Context) error {
 	slog.InfoContext(ctx, "starting fake data synchronization")
 
-	newItems := make(map[string]*{{.D.APIAlias}}.FakeData)
+	newItems := make(map[string]*{{.M.APIAlias}}.FakeData)
 	const numItems = 10 // Number of random items to generate
 	for i := 0; i < numItems; i++ {
 		id := gofakeit.UUID()
-		newItems[id] = &{{.D.APIAlias}}.FakeData{
+		newItems[id] = &{{.M.APIAlias}}.FakeData{
 			ID:          id,
 			Name:        gofakeit.AppName(),
 			Category:    gofakeit.CarMaker(),
@@ -48,7 +49,7 @@ func (s *FakeStore) Sync(ctx context.Context) error {
 
 	// Add a fixed item for deterministic testing.
 	fixedID := "fixed-item-001"
-	newItems[fixedID] = &{{.D.APIAlias}}.FakeData{
+	newItems[fixedID] = &{{.M.APIAlias}}.FakeData{
 		ID:          fixedID,
 		Name:        "Fixed Test Item",
 		Category:    "Testing",
@@ -66,18 +67,18 @@ func (s *FakeStore) Sync(ctx context.Context) error {
 
 // Get retrieves an item by its ID.
 // It returns the item and a boolean indicating if the item was found.
-func (s *FakeStore) Get(id string) (*{{.D.APIAlias}}.FakeData, bool) {
-	currentData := s.data.Load().(map[string]*{{.D.APIAlias}}.FakeData) // Load the current map atomically
+func (s *FakeStore) Get(id string) (*{{.M.APIAlias}}.FakeData, bool) {
+	currentData := s.data.Load().(map[string]*{{.M.APIAlias}}.FakeData) // Load the current map atomically
 	item, ok := currentData[id]
 	return item, ok
 }
 
 // List retrieves all items currently in the store.
 // It returns a slice of pointers to FakeData.
-func (s *FakeStore) List() []*{{.D.APIAlias}}.FakeData {
-	currentData := s.data.Load().(map[string]*{{.D.APIAlias}}.FakeData) // Load the current map atomically
+func (s *FakeStore) List() []*{{.M.APIAlias}}.FakeData {
+	currentData := s.data.Load().(map[string]*{{.M.APIAlias}}.FakeData) // Load the current map atomically
 
-	list := make([]*{{.D.APIAlias}}.FakeData, 0, len(currentData))
+	list := make([]*{{.M.APIAlias}}.FakeData, 0, len(currentData))
 	for _, item := range currentData {
 		list = append(list, item)
 	}

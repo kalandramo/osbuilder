@@ -9,7 +9,7 @@ import (
 	{{- if .Web.WithOTel}}
     "go.opentelemetry.io/otel"
 
-    "{{.D.ModuleName}}/internal/{{.Web.Name}}/pkg/metrics"
+    "{{.M.ModuleName}}/internal/{{.Web.Name}}/pkg/metrics"
     {{- end}}
 )
 
@@ -69,15 +69,15 @@ func (h *Handler) List{{.Web.R.SingularName}}(c *gin.Context) {
 func init() {
 	Register(func(v1 *gin.RouterGroup, handler *Handler, mws ...gin.HandlerFunc) {
 		{{- if ne .Web.R.ResourcePathPrefix "" }}
-		rg := v1.Group("/{{.Web.R.ResourcePathPrefix}}/{{.Web.R.Last.PluralLower}}", mws...)
+		rg := v1.Group("/{{.Web.R.ResourcePathPrefix}}/{{.Web.R.PluralLower}}", mws...)
 		{{- else}}
-		rg := v1.Group("/{{.Web.R.Last.PluralLower}}", mws...)
+		rg := v1.Group("/{{.Web.R.PluralLower}}", mws...)
 		{{- end}}
 		rg.POST("", handler.Create{{.Web.R.SingularName}})
-		rg.PUT(":{{.Web.R.Last.SingularLowerFirst}}ID", handler.Update{{.Web.R.SingularName}})
-		rg.DELETE(":{{.Web.R.Last.SingularLowerFirst}}ID", handler.Delete{{.Web.R.SingularName}})
+		rg.PUT(":{{.Web.R.SingularLowerFirst}}ID", handler.Update{{.Web.R.SingularName}})
+		rg.DELETE(":{{.Web.R.SingularLowerFirst}}ID", handler.Delete{{.Web.R.SingularName}})
 		rg.DELETE("", handler.Delete{{.Web.R.PluralName}})
-		rg.GET(":{{.Web.R.Last.SingularLowerFirst}}ID", handler.Get{{.Web.R.SingularName}})
+		rg.GET(":{{.Web.R.SingularLowerFirst}}ID", handler.Get{{.Web.R.SingularName}})
 		rg.GET("", handler.List{{.Web.R.SingularName}})
 	})
 }

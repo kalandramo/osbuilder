@@ -1,4 +1,4 @@
-module {{.D.ModuleName}}
+module {{.M.ModuleName}}
 
 require (
     gorm.io/plugin/dbresolver v1.6.2

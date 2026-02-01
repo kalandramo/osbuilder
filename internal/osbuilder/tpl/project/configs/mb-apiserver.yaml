@@ -57,7 +57,7 @@ polaris:
   timeout: 30s
   retry-count: 3
   provider:
-    namespace: {{$.D.ProjectName}}
+    namespace: {{$.M.ProjectName}}
     service: {{.BinaryName}}
 {{- end}}
 {{- if or (eq .StorageType "mysql") (eq .StorageType "mariadb") }}
@@ -75,7 +75,7 @@ mysql:
   # {{.}} 访问地址
   endpoint: http://127.0.0.1:9999
   # 访问 {{.}} 时的 User-Agent
-  user-agent: dms-apiserver
+  user-agent: {{$.BinaryName}}
   # 开启 resty 客户端的 debug 模式
   debug: true
   # 访问远端服务时的超时时间

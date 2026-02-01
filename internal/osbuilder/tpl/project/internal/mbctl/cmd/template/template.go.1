@@ -1,0 +1,90 @@
+package template
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/enescakir/emoji"
+	"github.com/spf13/cobra"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
+	"k8s.io/kubectl/pkg/util/templates"
+
+	cmdutil "github.com/onexstack/b-dms/internal/dmsctl/cmd/util"
+	// 引入刚刚创建的 registry 包
+)
+
+// TemplateOptions defines configuration for the "template" command.
+type TemplateOptions struct {
+	RootDir string // working directory
+	Output  string // output directory
+	Force   bool   // overwrite if exists
+
+	genericiooptions.IOStreams
+}
+
+var (
+	templateLongDesc = templates.LongDesc(`template command provides functionality for...
+        Add your detailed description here.`)
+
+	templateExample = templates.Examples(`# Basic usage
+        dmsctl template [options]
+
+        # With custom options
+        dmsctl template --output ./custom/path`)
+)
+
+// NewTemplateCmd creates the "template" command.
+func NewTemplateCmd(factory cmdutil.Factory, ioStreams genericiooptions.IOStreams) *cobra.Command {
+	opts := &TemplateOptions{
+		IOStreams: ioStreams,
+		Output:    "./",
+	}
+
+	cmd := &cobra.Command{
+		Use:                   "template",
+		Short:                 "template command description",
+		Long:                  templateLongDesc,
+		Example:               templateExample,
+		SilenceUsage:          true,
+		SilenceErrors:         true,
+		DisableFlagsInUseLine: true,
+		Run: func(cmd *cobra.Command, args []string) {
+			cmdutil.CheckErr(opts.Complete())
+			cmdutil.CheckErr(opts.Validate())
+			cmdutil.CheckErr(opts.Run())
+		},
+	}
+
+	// Add flags
+	cmd.Flags().StringVar(&opts.Output, "output", opts.Output, "Output directory for generated files.")
+	cmd.Flags().BoolVarP(&opts.Force, "force", "f", false, "Overwrite existing files if they exist.")
+
+	return cmd
+}
+
+// Complete sets default values and resolves working directory.
+func (o *TemplateOptions) Complete() error {
+	o.RootDir, _ = os.Getwd()
+	return nil
+}
+
+// Validate ensures provided inputs are valid.
+func (o *TemplateOptions) Validate() error {
+	return nil
+}
+
+// Run performs the template operation.
+func (o *TemplateOptions) Run() error {
+	o.PrintGettingStarted()
+	return nil
+}
+
+// PrintGettingStarted prints formatted success information.
+func (o *TemplateOptions) PrintGettingStarted() {
+	fmt.Printf("%s Successfully executed template command\n", emoji.CheckMarkButton)
+}
+
+func init() {
+	// 自动注册到 Root 命令的 "Project Commands" 组
+	cmdutil.Register(cmdutil.GroupProject, NewTemplateCmd)
+}

@@ -1,3 +1,4 @@
+{{- $D := or .Web .MQ .Job -}}
 package handler
 
 import (
@@ -7,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/onexstack/onexstack/pkg/core"
 
-	{{.Web.APIImportPath}}
+	{{$D.APIImportPath}}
 )
 
 // Healthz handles service health check requests.

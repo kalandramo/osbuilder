@@ -1,4 +1,4 @@
-// nolint: dupl
+{{- $D := or .Web .MQ .Job -}}
 package store
 
 import (
@@ -8,7 +8,7 @@ import (
 	genericstore "github.com/onexstack/onexstack/pkg/store"
 	"github.com/onexstack/onexstack/pkg/store/where"
 
-	"{{.D.ModuleName}}/internal/{{.Web.Name}}/model"
+	"{{.M.ModuleName}}/internal/{{$D.Name}}/model"
 )
 
 // UserStore defines the interface for managing user-related persistent data.

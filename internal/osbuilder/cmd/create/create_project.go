@@ -138,9 +138,19 @@ func (o *ProjectOptions) Complete(_ cmdutil.Factory, _ *cobra.Command, args []st
 		o.Project.WebServers[i] = ws.Complete(o.Project)
 	}
 
-	// Generate per-jobserver files
+	// Generate per-mqserver files
 	for i, mq := range o.Project.MQServers {
 		o.Project.MQServers[i] = mq.Complete(o.Project)
+	}
+
+	// Generate per-jobserver files
+	for i, job := range o.Project.JobServers {
+		o.Project.JobServers[i] = job.Complete(o.Project)
+	}
+
+	// Generate per-clitool files
+	for i, cli := range o.Project.CLITools {
+		o.Project.CLITools[i] = cli.Complete(o.Project)
 	}
 
 	return nil
@@ -159,14 +169,6 @@ func (o *ProjectOptions) Validate(_ *cobra.Command, _ []string) error {
 
 	if err := validateMetadata(o.Project.Metadata); err != nil {
 		return err
-	}
-
-	// Validate application type (project-level)
-	if len(o.Project.Jobs) > 0 || len(o.Project.CLIApps) > 0 {
-		return fmt.Errorf(
-			"unsupported application type, supported: %s",
-			strings.Join(known.AvailableApplicationTypes.UnsortedList(), ", "),
-		)
 	}
 
 	// Validate web frameworks and storage types (per web server)
@@ -217,6 +219,21 @@ func (o *ProjectOptions) Validate(_ *cobra.Command, _ []string) error {
 				mq.Name, st, strings.Join(known.AvailableStorageTypes.UnsortedList(), ", "),
 			)
 		}
+	}
+
+	// Validate storage types.
+	for _, job := range o.Project.JobServers {
+		// Storage type
+		st := strings.TrimSpace(job.StorageType)
+		if !known.AvailableStorageTypes.Has(st) {
+			return fmt.Errorf(
+				"web server %q: unsupported storageType %q; supported: %s",
+				job.Name, st, strings.Join(known.AvailableStorageTypes.UnsortedList(), ", "),
+			)
+		}
+	}
+
+	for range o.Project.CLITools {
 	}
 
 	return nil
@@ -330,10 +347,10 @@ func (o *ProjectOptions) PrintGettingStarted() {
 				}
 			}
 		}
-	} else if len(o.Project.WebServers) > 0 {
+	} else {
 		fmt.Println(
 			color.WhiteString("$ make build"),
-			color.CyanString("# build the binary"),
+			color.CyanString("# Build all available binaries"),
 		)
 	}
 
@@ -433,7 +450,7 @@ func (o *ProjectOptions) Generate(f cmdutil.Factory, fm *file.FileManager) error
 		// 生成 client 类型的 fake 文件
 		for _, kind := range mq.Clients {
 			mq.TypedClientName = helper.ToLower(kind)
-			tplFile := "/project/internal/apiserver/pkg/clientset/typed/fake/fake.go"
+			tplFile := "/project/internal/mqserver/pkg/clientset/typed/fake/fake.go"
 			pairs := map[string]string{
 				filepath.Join(mq.PkgDir(), fmt.Sprintf("clientset/typed/%s/%s.go", mq.TypedClientName, mq.TypedClientName)): tplFile,
 			}
@@ -443,7 +460,50 @@ func (o *ProjectOptions) Generate(f cmdutil.Factory, fm *file.FileManager) error
 		}
 	}
 
-	// TODO: Add jobs/CLI apps generation when templates are ready.
+	// Generate per-jobserver files
+	for _, job := range o.Project.JobServers {
+		data := types.TemplateData{Project: o.Project, Job: job}
+
+		// 生成web server主文件
+		if err := helper.RenderTemplate(fm, job.Pairs(), funcs, &data); err != nil {
+			return err
+		}
+
+		// 生成 client 类型的 fake 文件
+		for _, kind := range job.Clients {
+			job.TypedClientName = helper.ToLower(kind)
+			tplFile := "/project/internal/jobserver/pkg/clientset/typed/fake/fake.go"
+			pairs := map[string]string{
+				filepath.Join(job.PkgDir(), fmt.Sprintf("clientset/typed/%s/%s.go", job.TypedClientName, job.TypedClientName)): tplFile,
+			}
+			if err := helper.RenderTemplate(fm, pairs, nil, &data); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Generate per-clitool files
+	for _, cli := range o.Project.CLITools {
+		data := types.TemplateData{Project: o.Project, CLI: cli}
+
+		// 生成web server主文件
+		if err := helper.RenderTemplate(fm, cli.Pairs(), funcs, &data); err != nil {
+			return err
+		}
+
+		// 生成 client 类型的 fake 文件
+		for _, kind := range cli.Clients {
+			cli.TypedClientName = helper.ToLower(kind)
+			tplFile := "/project/internal/mbctl/pkg/clientset/typed/fake/fake.go"
+			pairs := map[string]string{
+				filepath.Join(cli.PkgDir(), fmt.Sprintf("clientset/typed/%s/%s.go", cli.TypedClientName, cli.TypedClientName)): tplFile,
+			}
+			if err := helper.RenderTemplate(fm, pairs, nil, &data); err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -486,6 +546,24 @@ func correctProjectConfig(proj *types.Project) *types.Project {
 		}
 		if ws.WebFramework != known.WebFrameworkGin {
 			ws.WithWS = false
+		}
+	}
+
+	for _, mq := range proj.MQServers {
+		if mq.StorageType == "" {
+			mq.StorageType = known.StorageTypeMemory
+		}
+		if mq.StorageType == known.StorageTypeMySQL {
+			mq.StorageType = known.StorageTypeMariaDB
+		}
+	}
+
+	for _, job := range proj.JobServers {
+		if job.StorageType == "" {
+			job.StorageType = known.StorageTypeMemory
+		}
+		if job.StorageType == known.StorageTypeMySQL {
+			job.StorageType = known.StorageTypeMariaDB
 		}
 	}
 
@@ -532,11 +610,17 @@ func validateImageConfig(image types.ImageConfig) error {
 	}
 
 	// Validate dockerfile mode (project-level)
-	dockerfileMode := strings.TrimSpace(image.DockerfileMode)
-	if !known.AvailableDockerfileModes.Has(dockerfileMode) {
+	if !known.AvailableDockerfileModes.Has(image.DockerfileMode) {
 		return fmt.Errorf(
 			"unsupported metadata.image.dockerfileMode %q; supported: %s",
-			dockerfileMode, strings.Join(known.AvailableDockerfileModes.UnsortedList(), ", "),
+			image.DockerfileMode, strings.Join(known.AvailableDockerfileModes.UnsortedList(), ", "),
+		)
+	}
+
+	if !known.AvailableDistrolessModes.Has(image.DistrolessMode) {
+		return fmt.Errorf(
+			"unsupported metadata.image.distrolessMode %q; supported: %s",
+			image.DistrolessMode, strings.Join(known.AvailableDistrolessModes.UnsortedList(), ", "),
 		)
 	}
 

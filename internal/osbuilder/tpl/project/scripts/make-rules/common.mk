@@ -10,7 +10,7 @@ PROJ_ROOT_DIR := $(strip $(abspath $(shell cd $(COMMON_SELF_DIR)/../../ && pwd -
 OUTPUT_DIR := $(PROJ_ROOT_DIR)/_output
 
 # 定义包名
-ROOT_PACKAGE={{.D.ModuleName}}
+ROOT_PACKAGE={{.M.ModuleName}}
 
 # Protobuf 文件存放路径
 APIROOT=$(PROJ_ROOT_DIR)/pkg/api

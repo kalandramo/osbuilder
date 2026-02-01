@@ -27,10 +27,15 @@ type ImageConfig struct {
 	//   - Runtime-only: saved as "Dockerfile.runtime-only"
 	DockerfileMode string `yaml:"dockerfileMode"`
 
-	// Distroless controls the base image used for the runtime stage.
-	// - true: Use "gcr.io/distroless/base-debian12:nonroot" (recommended for production).
-	// - false: Use "debian:bookworm" (convenient for testing/debugging).
-	Distroless bool `yaml:"distroless"`
+	// DistrolessMode define distroless usage modes.
+	// - always:
+	//   - forces distroless images for all environments (Docker builds).
+	// - never:
+	//   - forces standard distribution (dist) images (e.g., debian:bookworm) for all environments.
+	// - auto:
+	//   - Use distroless for production builds (e.g., multi-stage final stage).
+	//   - Use dist images for non-production builds (e.g., runtime-only or dev targets) for easier debugging.
+	DistrolessMode string `yaml:"distrolessMode"`
 }
 
 // Project is the top-level configuration for a generated project.
@@ -43,10 +48,12 @@ type Project struct {
 	Metadata *Metadata `yaml:"metadata"`
 
 	// Use lowerCamelCase in YAML and pointer slices + omitempty for sparsity.
-	WebServers []*WebServer      `yaml:"webServers,omitempty"`
-	MQServers  []*MQServer       `yaml:"mqServers,omitempty"`
-	Jobs       []*Job            `yaml:"jobs,omitempty"`    // previously: JobServer
-	CLIApps    []*CLIApplication `yaml:"cliApps,omitempty"` // previously: CLIApp
+	WebServers []*WebServer `yaml:"webServers,omitempty"`
+	JobServers []*JobServer `yaml:"jobServers,omitempty"`
+	MQServers  []*MQServer  `yaml:"mqServers,omitempty"`
+	CLITools   []*CLITool   `yaml:"cliTools,omitempty"`
+	// DeclServers     []*DeclServer     `yaml:"declServers,omitempty"`
+	// DeclControllers []*DeclController `yaml:"declControllers,omitempty"`
 
 	// Common derived data used during generation (not serialized).
 	M *ProjectGen `yaml:"-"`
@@ -75,17 +82,90 @@ type Metadata struct {
 }
 
 // FindWebServer returns the first web server whose BinaryName matches.
-// Deprecated: use WebServerByBinary to get an ok flag and avoid nil-struct ambiguity.
+// If binaryName is empty, it returns the first available WebServer.
 func (p *Project) FindWebServer(binaryName string) *WebServer {
 	ws, _ := p.WebServerByBinary(binaryName)
 	return ws
 }
 
 // WebServerByBinary returns a web server and a boolean indicating if it was found.
+// If binaryName is empty, it defaults to the first non-nil WebServer in the list.
 func (p *Project) WebServerByBinary(binaryName string) (*WebServer, bool) {
 	for _, ws := range p.WebServers {
-		if ws != nil && ws.BinaryName == binaryName {
+		// Skip nil entries to ensure safety
+		if ws == nil {
+			continue
+		}
+
+		// Logic:
+		// 1. If binaryName is empty (""), return the first valid server encountered.
+		// 2. Otherwise, return the server that strictly matches the binaryName.
+		if binaryName == "" || ws.BinaryName == binaryName {
 			return ws, true
+		}
+	}
+	return nil, false
+}
+
+// FindMQServer returns the first web server whose BinaryName matches.
+func (p *Project) FindMQServer(binaryName string) *MQServer {
+	ws, _ := p.MQServerByBinary(binaryName)
+	return ws
+}
+
+// MQServerByBinary returns a web server and a boolean indicating if it was found.
+func (p *Project) MQServerByBinary(binaryName string) (*MQServer, bool) {
+	for _, mq := range p.MQServers {
+		// Skip nil entries to ensure safety
+		if mq == nil {
+			continue
+		}
+
+		if binaryName == "" || mq.BinaryName == binaryName {
+			return mq, true
+		}
+	}
+	return nil, false
+}
+
+// FindJobServer returns the first job server whose BinaryName matches.
+func (p *Project) FindJobServer(binaryName string) *JobServer {
+	job, _ := p.JobServerByBinary(binaryName)
+	return job
+}
+
+// JobServerByBinary returns a web server and a boolean indicating if it was found.
+func (p *Project) JobServerByBinary(binaryName string) (*JobServer, bool) {
+	for _, job := range p.JobServers {
+		// Skip nil entries to ensure safety
+		if job == nil {
+			continue
+		}
+
+		if binaryName == "" || job.BinaryName == binaryName {
+			return job, true
+		}
+	}
+	return nil, false
+}
+
+// FindCLITool returns the first job server whose BinaryName matches.
+// Deprecated: use CLIToolByBinary to get an ok flag and avoid nil-struct ambiguity.
+func (p *Project) FindCLITool(binaryName string) *CLITool {
+	cli, _ := p.CLIToolByBinary(binaryName)
+	return cli
+}
+
+// CLIToolByBinary returns a web server and a boolean indicating if it was found.
+func (p *Project) CLIToolByBinary(binaryName string) (*CLITool, bool) {
+	for _, cli := range p.CLITools {
+		// Skip nil entries to ensure safety
+		if cli == nil {
+			continue
+		}
+
+		if binaryName == "" || cli.BinaryName == binaryName {
+			return cli, true
 		}
 	}
 	return nil, false
@@ -227,8 +307,8 @@ type ServerGen struct {
 	EnvironmentPrefix string   `yaml:"-"`
 	// APIImportPath is like: v1 "module/pkg/api/apiserver/v1"
 	APIImportPath   string   `yaml:"-"`
-	R               *RESTGen `yaml:"-"`
 	TypedClientName string   `yaml:"-"`
+	R               *RESTGen `yaml:"-"`
 }
 
 func NewServerGen(proj *Project, binaryName string) ServerGen {
@@ -258,6 +338,8 @@ type TemplateData struct {
 	*Project
 	Web *WebServer
 	MQ  *MQServer
+	Job *JobServer
+	CLI *CLITool
 }
 
 func (td *TemplateData) AbsPath(relPath string) string {

@@ -93,6 +93,23 @@ const (
 	DockerfileModeCombined = "combined"
 )
 
+// Define distroless usage modes.
+const (
+	// DistrolessModeAlways forces distroless images for all environments (Docker builds).
+	// Scenario: Extreme security and minimal size requirements, exposing environmental differences early in dev.
+	DistrolessModeAlways = "always"
+
+	// DistrolessModeNever forces standard distribution (dist) images (e.g., debian:bookworm) for all environments.
+	// Scenario: Need Shell for debugging inside containers, or app depends on system libraries missing in distroless.
+	DistrolessModeNever = "never"
+
+	// DistrolessModeAuto (Recommended Default) Smart mode.
+	// Logic:
+	// - Use distroless for production builds (e.g., multi-stage final stage).
+	// - Use dist images for non-production builds (e.g., runtime-only or dev targets) for easier debugging.
+	DistrolessModeAuto = "auto"
+)
+
 // Supported service registry types (used in project configuration or scaffolding).
 const (
 	// No service registry integration.
@@ -153,7 +170,6 @@ var (
 	}
 
 	// AllMakefileModes lists all supported Makefile generation modes.
-	// Useful for validation, CLI completions, or documentation output.
 	AllMakefileModes = []string{
 		MakefileModeNone,
 		MakefileModeUnstructured,
@@ -166,6 +182,13 @@ var (
 		DockerfileModeRuntimeOnly,
 		DockerfileModeMultiStage,
 		DockerfileModeCombined,
+	}
+
+	// AllDistrolessModes lists all supported distroless usage modes.
+	AllDistrolessModes = []string{
+		DistrolessModeAlways,
+		DistrolessModeNever,
+		DistrolessModeAuto,
 	}
 
 	// AllServiceRegistryTypes lists all supported service registries.
@@ -184,6 +207,7 @@ var (
 	storageTypeSet     = newSet(AllStorageTypes)
 	appStyleSet        = newSet(AllAppStyles)
 	makefileModeSet    = newSet(AllMakefileModes)
+	distrolessModeSet  = newSet(AllDistrolessModes)
 )
 
 func newSet(values []string) map[string]struct{} {
@@ -216,6 +240,9 @@ func IsValidAppStyle(v string) bool { return has(appStyleSet, v) }
 
 // IsValidMakefileMode reports whether v is a supported makefile mode.
 func IsValidMakefileMode(v string) bool { return has(makefileModeSet, v) }
+
+// IsValidDistrolessMode reports whether v is a supported distroless mode.
+func IsValidDistrolessMode(v string) bool { return has(distrolessModeSet, v) }
 
 // CanonicalWebFramework normalizes common inputs to a supported framework.
 func CanonicalWebFramework(s string) (string, bool) {
@@ -329,6 +356,21 @@ func CanonicalAppStyle(s string) (string, bool) {
 		return AppStyleOneX, true
 	case "kubernetes", "k8s":
 		return AppStyleKubernetes, true
+	default:
+		return "", false
+	}
+}
+
+// CanonicalDistrolessMode normalizes inputs to a supported distroless mode.
+func CanonicalDistrolessMode(s string) (string, bool) {
+	k := normalize(s)
+	switch k {
+	case "always", "true", "yes", "on":
+		return DistrolessModeAlways, true
+	case "never", "false", "no", "off":
+		return DistrolessModeNever, true
+	case "auto":
+		return DistrolessModeAuto, true
 	default:
 		return "", false
 	}

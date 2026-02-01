@@ -7,7 +7,6 @@ import (
 
 	"github.com/duke-git/lancet/v2/strutil"
 	"github.com/gobuffalo/flect"
-	stringsutil "github.com/onexstack/onexstack/pkg/util/strings"
 
 	"github.com/onexstack/osbuilder/internal/osbuilder/known"
 )
@@ -64,7 +63,7 @@ func (ws *WebServer) RESTBizFile() string {
 		ws.Proj.M.APIVersion,
 		ws.R.ResourcePathPrefix,
 		ws.R.REST.SingularLower,
-		ws.R.FileName,
+		ws.R.REST.SingularLower+".go",
 	)
 }
 
@@ -100,9 +99,17 @@ func (ws *WebServer) APIDir() string {
 
 // PrepareRESTMetadata constructs REST metadata for a given kind.
 func (ws *WebServer) PrepareRESTMetadata(kindPath string) {
+	ws.R = prepareRESTMetadata(ws.Proj.M.APIVersion, kindPath)
+}
+
+// prepareRESTMetadata constructs REST metadata for a given kind.
+func prepareRESTMetadata(apiVersion string, kindPath string) *RESTGen {
+	// kindPath: jobv1/cron_job
+	// lastKind: cron_job
+	// kind: job_cron_job
 	lastKind := filepath.Base(kindPath)
 	// kind := strings.ReplaceAll(kindPath, "/", "_")
-	upperVer := strings.ToUpper(ws.Proj.M.APIVersion)
+	upperVer := strings.ToUpper(apiVersion)
 
 	r := RESTGen{
 		// SingularName:       strutil.UpperFirst(strutil.CamelCase(kind)),
@@ -112,6 +119,7 @@ func (ws *WebServer) PrepareRESTMetadata(kindPath string) {
 		// PluralLowerFirst:   flect.Pluralize(strutil.CamelCase(kind)),
 		// PluralLower:        strings.ToLower(flect.Pluralize(strutil.CamelCase(kind))),
 		REST: REST{
+			SingularName:       strutil.UpperFirst(strutil.CamelCase(lastKind)),
 			SingularLowerFirst: strutil.CamelCase(lastKind),
 			SingularLower:      strings.ToLower(strutil.CamelCase(lastKind)),
 			PluralName:         flect.Pluralize(strutil.UpperFirst(strutil.CamelCase(lastKind))),
@@ -133,13 +141,25 @@ func (ws *WebServer) PrepareRESTMetadata(kindPath string) {
 		r.FileName = strings.ReplaceAll(r.ResourcePathPrefix, "/", "_") + "_" + r.FileName
 	}
 
-	ws.R = &r
+	return &r
 }
 
 // SetRESTGen attaches REST metadata for later template rendering.
 func (ws *WebServer) SetRESTGen(meta *RESTGen) *WebServer {
 	ws.R = meta
 	return ws
+}
+
+func (ws *WebServer) GetR() *RESTGen {
+	return ws.R
+}
+
+func (ws *WebServer) GetProj() *Project {
+	return ws.Proj
+}
+
+func (ws *WebServer) GetClients() []string {
+	return ws.Clients
 }
 
 // Pairs returns a map of destination relative paths to template paths.
@@ -165,9 +185,12 @@ func (ws *WebServer) Pairs() map[string]string {
 	add(filepath.Join("cmd", ws.BinaryName, "main.go"), "/project/cmd/mb-apiserver/main.go")
 	add(filepath.Join(ws.Proj.Configs(), ws.BinaryName+".yaml"), "/project/configs/mb-apiserver.yaml")
 
+	add(filepath.Join(ws.ModelDir(), "fake.go"), "/project/internal/apiserver/model/fake.go")
+
 	// Core internal packages reused across frameworks.
 	add(filepath.Join(storeDir, "doc.go"), "/project/internal/apiserver/store/doc.go")
 	add(filepath.Join(storeDir, "store.go"), "/project/internal/apiserver/store/store.go")
+	add(filepath.Join(storeDir, "fake.go"), "/project/internal/apiserver/store/fake.go")
 	add(filepath.Join(storeDir, "README.md"), "/project/internal/apiserver/store/README.md")
 
 	add(filepath.Join(bizDir, "biz.go"), "/project/internal/apiserver/biz/biz.go")
@@ -176,20 +199,6 @@ func (ws *WebServer) Pairs() map[string]string {
 
 	add(filepath.Join(ws.PkgDir(), "validation/validation.go"), "/project/internal/apiserver/pkg/validation/validation.go")
 
-	add(filepath.Join(internalPkg, "contextx/contextx.go"), "/project/internal/pkg/contextx/contextx.go")
-	add(filepath.Join(internalPkg, "contextx/doc.go"), "/project/internal/pkg/contextx/doc.go")
-	add(filepath.Join(internalPkg, "known/doc.go"), "/project/internal/pkg/known/doc.go")
-	add(filepath.Join(internalPkg, "known/known.go"), "/project/internal/pkg/known/known.go")
-
-	add(filepath.Join(internalPkg, "rid/doc.go"), "/project/internal/pkg/rid/doc.go")
-	add(filepath.Join(internalPkg, "rid/example_test.go"), "/project/internal/pkg/rid/example_test.go")
-	add(filepath.Join(internalPkg, "rid/rid.go"), "/project/internal/pkg/rid/rid.go")
-	add(filepath.Join(internalPkg, "rid/rid_test.go"), "/project/internal/pkg/rid/rid_test.go")
-	add(filepath.Join(internalPkg, "rid/salt.go"), "/project/internal/pkg/rid/salt.go")
-
-	add(filepath.Join(internalPkg, "errno/doc.go"), "/project/internal/pkg/errno/doc.go")
-	add(filepath.Join(internalPkg, "errno/code.go"), "/project/internal/pkg/errno/code.go")
-
 	add(filepath.Join(baseDir, "server.go"), "/project/internal/apiserver/server.go")
 	add(filepath.Join(baseDir, "wire.go"), "/project/internal/apiserver/wire.go")
 	add(filepath.Join(baseDir, "wire_gen.go"), "/project/internal/apiserver/wire_gen.go")
@@ -197,28 +206,8 @@ func (ws *WebServer) Pairs() map[string]string {
 	// Default proto for examples.
 	add(filepath.Join(apiDir, "example.proto"), "/project/pkg/api/apiserver/v1/example.proto")
 
-	if stringsutil.StringIn(ws.Proj.Metadata.DeploymentMethod, []string{known.DeploymentModeDocker, known.DeploymentModeKubernetes}) {
-		switch ws.Proj.Metadata.Image.DockerfileMode {
-		case known.DockerfileModeNone:
-			add(filepath.Join("build", "docker", ws.BinaryName, ".keep"), "/keep.tpl")
-		case known.DockerfileModeRuntimeOnly:
-			add(filepath.Join("build", "docker", ws.BinaryName, "Dockerfile"), "/project/build/docker/mb-apiserver/Dockerfile.runtime-only")
-		case known.DockerfileModeMultiStage:
-			add(filepath.Join("build", "docker", ws.BinaryName, "Dockerfile"), "/project/build/docker/mb-apiserver/Dockerfile.multi-stage")
-		case known.DockerfileModeCombined:
-			add(filepath.Join("build", "docker", ws.BinaryName, "Dockerfile"), "/project/build/docker/mb-apiserver/Dockerfile.multi-stage")
-			add(filepath.Join("build", "docker", ws.BinaryName, "Dockerfile.runtime-only"), "/project/build/docker/mb-apiserver/Dockerfile.runtime-only")
-		default:
-		}
-	}
-
-	if ws.Proj.Metadata.DeploymentMethod == known.DeploymentModeKubernetes {
-		add(filepath.Join("manifests", ws.BinaryName, ws.BinaryName+".deployment.yaml"), "/project/manifests/mb-apiserver/mb-apiserver.deployment.yaml")
-		add(filepath.Join("manifests", ws.BinaryName, ws.BinaryName+".service.yaml"), "/project/manifests/mb-apiserver/mb-apiserver.service.yaml")
-		add(filepath.Join("manifests", ws.BinaryName, ws.BinaryName+".configmap.yaml"), "/project/manifests/mb-apiserver/mb-apiserver.configmap.yaml")
-		add(filepath.Join("manifests", "nettool.deployment.yaml"), "/project/manifests/nettool.deployment.yaml")
-		add(filepath.Join("manifests", "nginx.deployment.yaml"), "/project/manifests/nginx.deployment.yaml")
-	}
+	AddGenericPackages(pairs, internalPkg)
+	GenerateKubernetesManifests(pairs, ws.Proj.Metadata, ws.BinaryName)
 
 	// Optional 'user' feature.
 	if ws.WithUser {

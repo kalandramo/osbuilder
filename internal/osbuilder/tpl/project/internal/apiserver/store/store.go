@@ -1,3 +1,4 @@
+{{- $D := or .Web .MQ .Job -}}
 package store
 
 import (
@@ -6,7 +7,6 @@ import (
 
 	"github.com/google/wire"
 	"gorm.io/gorm"
-
 	"github.com/onexstack/onexstack/pkg/store/where"
 )
 
@@ -27,7 +27,12 @@ type IStore interface {
 	DB(ctx context.Context, wheres ...where.Where) *gorm.DB
 	// TX executes the given function within a database transaction.
 	TX(ctx context.Context, fn func(ctx context.Context) error) error
-    {{- if .Web.WithUser}}
+    Fake() FakeStore
+	{{- if and .Job (not .Job.DisableCronJob) }}
+    CronJob() CronJobStore
+    Job() JobStore
+    {{- end}}
+	{{- if and .Web .Web.WithUser }}
     User() UserStore
     {{- end}}
 }
@@ -85,9 +90,26 @@ func (s *store) TX(ctx context.Context, fn func(ctx context.Context) error) erro
 	})
 }
 
-{{- if .Web.WithUser}}
+// Fake returns an instance that implements the FakeStore interface.
+func (s *store) Fake() FakeStore {
+    return newFakeStore(s)
+}
+
+{{- if and .Web .Web.WithUser }}
 // User returns an instance that implements the UserStore interface.
 func (s *store) User() UserStore {
-    return newUserStore(store)
+    return newUserStore(s)
+}
+{{- end}}
+
+{{- if and .Job (not .Job.DisableCronJob) }}
+// CronJob returns an instance that implements the CronJobStore interface.
+func (s *store) CronJob() CronJobStore {
+	return newCronJobStore(s)
+}
+
+// Job returns an instance that implements the JobStore interface.
+func (s *store) Job() JobStore {
+	return newJobStore(s)
 }
 {{- end}}

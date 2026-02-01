@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"{{.D.ModuleName}}/internal/pkg/rid"
+	"{{.M.ModuleName}}/internal/pkg/rid"
 )
 
 // Mock Salt function used for testing

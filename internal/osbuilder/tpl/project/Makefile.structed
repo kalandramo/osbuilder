@@ -2,7 +2,11 @@
 .DEFAULT_GOAL := all
 
 # Define the `all` pseudo-target for Makefile. When `make` is executed, it will default to executing the `all` target.
-all: deps protoc tidy format generate build cover
+{{- if or .Web .MQ }}
+all: deps protoc tidy format generate build
+{{- else }}
+all: tidy format generate build
+{{- end}}
 
 # ==============================================================================
 # Includes

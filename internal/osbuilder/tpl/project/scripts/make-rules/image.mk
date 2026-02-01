@@ -5,7 +5,7 @@
 DOCKER := docker
 DOCKER_SUPPORTED_API_VERSION ?= 1.32
 DOCKERFILE_DIR=$(PROJ_ROOT_DIR)/build/docker
-REGISTRY_PREFIX ?= {{.D.RegistryPrefix}}
+REGISTRY_PREFIX ?= {{.M.RegistryPrefix}}
 {{- if eq .Metadata.Image.DockerfileMode "combined" }}
 # Set to 1 to use Dockerfile.runtime-only when building images
 RUNTIME_ONLY ?= 0

@@ -6,8 +6,8 @@ import (
 
 	"google.golang.org/grpc"
 
-	"{{.D.ModuleName}}/internal/pkg/contextx"
-	"{{.D.ModuleName}}/internal/pkg/errno"
+	"{{.M.ModuleName}}/internal/pkg/contextx"
+	"{{.M.ModuleName}}/internal/pkg/errno"
 )
 
 // Authorizer 用于定义授权接口的实现.

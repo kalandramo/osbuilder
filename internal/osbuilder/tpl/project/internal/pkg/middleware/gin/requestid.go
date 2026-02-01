@@ -4,8 +4,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"{{.D.ModuleName}}/internal/pkg/contextx"
-	"{{.D.ModuleName}}/internal/pkg/known"
+	"{{.M.ModuleName}}/internal/pkg/contextx"
+	"{{.M.ModuleName}}/internal/pkg/known"
 )
 
 // RequestIDMiddleware is a Gin middleware that ensures every HTTP request

@@ -60,6 +60,13 @@ var (
 		DockerfileModeCombined,
 	)
 
+	// AvailableDistrolessModes lists supported distrolessMode modes.
+	AvailableDistrolessModes = sets.New(
+		DistrolessModeAlways,
+		DistrolessModeNever,
+		DistrolessModeAuto,
+	)
+
 	// AvailableServiceRegistry lists supported service registry.
 	AvailableServiceRegistry = sets.New(
 		ServiceRegistryNone,

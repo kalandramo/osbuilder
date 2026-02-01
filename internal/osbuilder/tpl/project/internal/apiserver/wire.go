@@ -11,18 +11,18 @@ import (
     "github.com/onexstack/onexstack/pkg/authz"
     {{- end}}
 
-	"{{.D.ModuleName}}/internal/{{.Web.Name}}/biz"
-	"{{.D.ModuleName}}/internal/{{.Web.Name}}/handler"
-	"{{.D.ModuleName}}/internal/{{.Web.Name}}/pkg/validation"
-	"{{.D.ModuleName}}/internal/{{.Web.Name}}/store"
+	"{{.M.ModuleName}}/internal/{{.Web.Name}}/biz"
+	"{{.M.ModuleName}}/internal/{{.Web.Name}}/handler"
+	"{{.M.ModuleName}}/internal/{{.Web.Name}}/pkg/validation"
+	"{{.M.ModuleName}}/internal/{{.Web.Name}}/store"
     {{- if .Web.Clients }}
-    "{{.D.ModuleName}}/internal/{{.Web.Name}}/pkg/clientset"
+    "{{.M.ModuleName}}/internal/{{.Web.Name}}/pkg/clientset"
     {{- end}}
     {{- if .Web.WithUser}}
     {{- if eq .Web.WebFramework "gin" }}
-    mw "{{.D.ModuleName}}/internal/pkg/middleware/gin"
+    mw "{{.M.ModuleName}}/internal/pkg/middleware/gin"
     {{- else if eq .Web.WebFramework "grpc"}}
-    mw "{{.D.ModuleName}}/internal/pkg/middleware/grpc"
+    mw "{{.M.ModuleName}}/internal/pkg/middleware/grpc"
     {{- end}}
     {{- end}}
 )
@@ -42,11 +42,11 @@ var infrastructureSet = wire.NewSet(
     {{- range .Web.Clients }}
     Provide{{. | kind}}Client,
     {{- end}}
-    {{- if .Web.WithPreloader }}
-    ProvideAStore,
-    {{- end}}
     clientset.New,
     wire.Bind(new(clientset.Interface), new(*clientset.Clientset)),
+    {{- end}}
+    {{- if .Web.WithPreloader }}
+    ProvideAStore,
     {{- end}}
 )
 

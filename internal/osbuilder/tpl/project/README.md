@@ -1,8 +1,8 @@
-# Project {{.D.ProjectName}}
+# Project {{.M.ProjectName}}
 
-{{.D.ProjectName}} 是一个基于 Go 语言开发的现代化微服务应用，采用简洁架构设计，具有代码质量高、扩展能力强、符合 Go 编码及最佳实践等特点。
+{{.M.ProjectName}} 是一个基于 Go 语言开发的现代化微服务应用，采用简洁架构设计，具有代码质量高、扩展能力强、符合 Go 编码及最佳实践等特点。
 
-{{.D.ProjectName}} 具有以下特性：
+{{.M.ProjectName}} 具有以下特性：
 - 软件架构：采用简洁架构设计，确保项目结构清晰、易维护；
 - 高频 Go 包：使用了 Go 项目开发中常用的包，如 {{if hasGin .WebServers }}gin、{{- end}}{{- if hasGRPC .WebServers }}grpc、{{- end}}{{if hasOTel .WebServers }}otel、{{- end}}gorm、gin、uuid、cobra、viper、pflag、resty、govalidator、slog、protobuf、casbin、onexstack 等；
 - 目录结构：遵循 [project-layout](https://github.com/golang-standards/project-layout) 规范，采用标准化的目录结构；
@@ -176,8 +176,8 @@ $ docker run --name {{.BinaryName}} -v configs/{{.BinaryName}}.yaml:/etc/{{.Bina
 感谢所有为本项目做出贡献的开发者们！
 
 <!-- 这里会自动显示贡献者头像 -->
-<a href="{{.D.ModuleName}}/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo={{.D.ModuleName}}" />
+<a href="{{.M.ModuleName}}/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo={{.M.ModuleName}}" />
 </a>
 
 *贡献者列表由 [contrib.rocks](https://contrib.rocks) 生成*
@@ -187,7 +187,7 @@ $ docker run --name {{.BinaryName}} -v configs/{{.BinaryName}}.yaml:/etc/{{.Bina
 ### 项目结构
 
 ```bash
-{{.D.ProjectName}}/  
+{{.M.ProjectName}}/  
 ├── cmd/                     # 应用程序入口  
 {{- range .WebServers }}  
 │   └── {{.BinaryName}}/       # {{.Name}} 服务  
@@ -225,13 +225,13 @@ $ docker run --name {{.BinaryName}} -v configs/{{.BinaryName}}.yaml:/etc/{{.Bina
 ### 相关链接
 
 - [项目文档](docs/)
-- [问题追踪]({{.D.ModuleName}}/issues)
-- [讨论区]({{.D.ModuleName}}/discussions)
-- [项目看板]({{.D.ModuleName}}/projects)
-- [发布页面]({{.D.ModuleName}}/releases)
+- [问题追踪]({{.M.ModuleName}}/issues)
+- [讨论区]({{.M.ModuleName}}/discussions)
+- [项目看板]({{.M.ModuleName}}/projects)
+- [发布页面]({{.M.ModuleName}}/releases)
 
 ### 支持
 
 如果这个项目对您有帮助，请考虑给我们一个 ⭐️ 来支持项目发展！
 
-[![Star History Chart](https://api.star-history.com/svg?repos={{.D.ModuleName}}&type=Date)](https://star-history.com/#{{.D.ModuleName}}&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos={{.M.ModuleName}}&type=Date)](https://star-history.com/#{{.M.ModuleName}}&Date)

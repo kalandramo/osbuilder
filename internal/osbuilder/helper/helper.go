@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"text/template"
 	"time"
@@ -29,6 +30,9 @@ import (
 )
 
 var underscoreReplacer = strings.NewReplacer(".", "_", "-", "_")
+
+// Pre-compile the replacer for better performance
+var dotReplacer = strings.NewReplacer("-", ".", "_", ".")
 
 // // FileSystem wraps a base path for managing file-related operations.
 type FileSystem struct {
@@ -211,6 +215,14 @@ func ToUnderscore() func(string) string {
 	}
 }
 
+// ToDot returns a function that converts underscores (_) to dots (.).
+// For example: "dms_mqserver_job" -> "dms.mqserver.job".
+func ToDot() func(string) string {
+	return func(s string) string {
+		return dotReplacer.Replace(s)
+	}
+}
+
 // Kind returns a function to convert strings to upper CamelCase.
 func Kind() func(string) string {
 	return func(input string) string {
@@ -258,6 +270,17 @@ func SingularLowers() func(string) string {
 			return input
 		}
 		return strings.ToLower(flect.Pluralize(ToUpperCamelCase(input)))
+	}
+}
+
+// ToUpper returns a function to convert strings to upper case.
+// For example: "helloWorld" -> "HELLOWORLD".
+func ToUpper() func(string) string {
+	return func(input string) string {
+		if len(input) == 0 {
+			return input
+		}
+		return strings.ToUpper(input)
 	}
 }
 
@@ -311,10 +334,33 @@ func HasOTel() func([]*types.WebServer) bool {
 	}
 }
 
-func HasMemoryStorageType() func([]*types.WebServer) bool {
-	return func(servers []*types.WebServer) bool {
-		for _, server := range servers {
-			if server.StorageType == known.StorageTypeMemory {
+// HasMemoryStorageType 返回一个模板辅助函数
+// 修改为接受 interface{} 以支持 WebServers 和 MQServices 两种不同的切片
+func HasMemoryStorageType() func(interface{}) bool {
+	return func(items interface{}) bool {
+		// 1. 获取传入对象的反射值
+		val := reflect.ValueOf(items)
+
+		// 2. 确保传入的是一个 Slice (切片)
+		if val.Kind() != reflect.Slice {
+			return false
+		}
+
+		// 3. 遍历切片
+		for i := 0; i < val.Len(); i++ {
+			// 获取切片中的元素 (比如 *types.WebServer 或 *types.MQService)
+			item := val.Index(i)
+
+			// 如果是指针，获取其指向的结构体
+			if item.Kind() == reflect.Ptr {
+				item = item.Elem()
+			}
+
+			// 4. 动态查找 "StorageType" 字段
+			field := item.FieldByName("StorageType")
+
+			// 检查字段是否存在且有效
+			if field.IsValid() && field.String() == known.StorageTypeMemory {
 				return true
 			}
 		}
@@ -338,10 +384,12 @@ func GetTemplateFuncMap() template.FuncMap {
 		"kind":                 Kind(),
 		"kinds":                Kinds(),
 		"capitalize":           Capitalize(),
+		"toupper":              ToUpper(),
 		"lowerkind":            SingularLower(),
 		"lowerkinds":           SingularLowers(),
 		"currentYear":          CurrentYear(),
 		"underscore":           ToUnderscore(),
+		"toDot":                ToDot(),
 		"hasGRPC":              HasGRPC(),
 		"hasGin":               HasGin(),
 		"hasOTel":              HasOTel(),

@@ -4,7 +4,7 @@
 
 GO := go
 GO_BUILD_FLAGS += -ldflags "$(GO_LDFLAGS)"
-{{- if hasMemoryStorageType .WebServers }}
+{{- if or (hasMemoryStorageType .WebServers) (hasMemoryStorageType .MQServers) (hasMemoryStorageType .MQServers )}}
 CGO_ENABLED ?= 1
 {{- else}}
 CGO_ENABLED ?= 0

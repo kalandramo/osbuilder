@@ -2,12 +2,12 @@
 //
 syntax = "proto3"; // Specifies the syntax version used in this file.
 
-package {{.Web.Name}}.{{.D.APIVersion}};
+package {{.Web.Name}}.{{.M.APIVersion}};
 
 import "google/protobuf/timestamp.proto"; // Importing Google's timestamp type for date/time fields.
 
 // Specifies the Go package for generated code.
-option go_package = "{{.D.ModuleName}}/pkg/api/{{.Web.Name}}/{{.D.APIVersion}};{{.D.APIVersion}}";
+option go_package = "{{.M.ModuleName}}/pkg/api/{{.Web.Name}}/{{.M.APIVersion}};{{.M.APIVersion}}";
 
 // WebSocket 消息包装器
 message WSMessage {

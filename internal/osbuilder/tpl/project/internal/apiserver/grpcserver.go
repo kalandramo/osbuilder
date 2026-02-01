@@ -26,11 +26,11 @@ import (
     {{- end}}
 
 	{{- if .Web.WithOTel}}
-	"{{.D.ModuleName}}/internal/{{.Web.Name}}/pkg/metrics"
+	"{{.M.ModuleName}}/internal/{{.Web.Name}}/pkg/metrics"
     {{- end}}
-	{{.D.APIAlias}} "{{.D.ModuleName}}/pkg/api/{{.Web.Name}}/{{.D.APIVersion}}"
-	mw "{{.D.ModuleName}}/internal/pkg/middleware/grpc"
-	"{{.D.ModuleName}}/internal/{{.Web.Name}}/handler"
+	{{.M.APIAlias}} "{{.M.ModuleName}}/pkg/api/{{.Web.Name}}/{{.M.APIVersion}}"
+	mw "{{.M.ModuleName}}/internal/pkg/middleware/grpc"
+	"{{.M.ModuleName}}/internal/{{.Web.Name}}/handler"
 )
 
 // grpcServer defines a gRPC server.
@@ -99,7 +99,7 @@ func (c *ServerConfig) NewGRPCServer() (*grpcServer, error) {
 		serverOptions,
 	 	func() (func(s grpc.ServiceRegistrar), string) {
         	return func(s grpc.ServiceRegistrar) { 
-				{{.D.APIAlias}}.Register{{.Web.GRPCServiceName}}Server(s, handler.NewHandler(c.biz)) 
+				{{.M.APIAlias}}.Register{{.Web.GRPCServiceName}}Server(s, handler.NewHandler(c.biz)) 
 			}, v1.{{.Web.GRPCServiceName}}_ServiceDesc.ServiceName
         },
 	)
@@ -124,7 +124,7 @@ func (c *ServerConfig) NewGRPCServer() (*grpcServer, error) {
 		c.GRPCOptions,
 		c.TLSOptions,
 		func(mux *runtime.ServeMux, conn *grpc.ClientConn) error {
-			return {{.D.APIAlias}}.Register{{.Web.GRPCServiceName}}Handler(context.Background(), mux, conn)
+			return {{.M.APIAlias}}.Register{{.Web.GRPCServiceName}}Handler(context.Background(), mux, conn)
 		},
 	)
 	if err != nil {
@@ -156,10 +156,10 @@ func (s *grpcServer) GracefulStop(ctx context.Context) {
 func NewAuthnWhiteListMatcher() selector.Matcher {
 	whitelist := map[string]struct{}{
 		{{- if .Web.WithHealthz}}
-		{{.D.APIAlias}}.{{.Web.GRPCServiceName}}_Healthz_FullMethodName:    {},
+		{{.M.APIAlias}}.{{.Web.GRPCServiceName}}_Healthz_FullMethodName:    {},
 		{{- end}}
-		{{.D.APIAlias}}.{{.Web.GRPCServiceName}}_CreateUser_FullMethodName: {},
-		{{.D.APIAlias}}.{{.Web.GRPCServiceName}}_Login_FullMethodName:      {},
+		{{.M.APIAlias}}.{{.Web.GRPCServiceName}}_CreateUser_FullMethodName: {},
+		{{.M.APIAlias}}.{{.Web.GRPCServiceName}}_Login_FullMethodName:      {},
 	}
 	return selector.MatchFunc(func(ctx context.Context, call interceptors.CallMeta) bool {
 		_, ok := whitelist[call.FullMethod()]
@@ -171,10 +171,10 @@ func NewAuthnWhiteListMatcher() selector.Matcher {
 func NewAuthzWhiteListMatcher() selector.Matcher {
 	whitelist := map[string]struct{}{
 		{{- if .Web.WithHealthz}}
-		{{.D.APIAlias}}.{{.Web.GRPCServiceName}}_Healthz_FullMethodName:    {},
+		{{.M.APIAlias}}.{{.Web.GRPCServiceName}}_Healthz_FullMethodName:    {},
 		{{- end}}
-		{{.D.APIAlias}}.{{.Web.GRPCServiceName}}_CreateUser_FullMethodName: {},
-		{{.D.APIAlias}}.{{.Web.GRPCServiceName}}_Login_FullMethodName:      {},
+		{{.M.APIAlias}}.{{.Web.GRPCServiceName}}_CreateUser_FullMethodName: {},
+		{{.M.APIAlias}}.{{.Web.GRPCServiceName}}_Login_FullMethodName:      {},
 	}
 	return selector.MatchFunc(func(ctx context.Context, call interceptors.CallMeta) bool {
 		_, ok := whitelist[call.FullMethod()]

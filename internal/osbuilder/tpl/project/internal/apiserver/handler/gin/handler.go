@@ -5,8 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"{{.D.ModuleName}}/internal/{{.Web.Name}}/biz"
-	"{{.D.ModuleName}}/internal/{{.Web.Name}}/pkg/validation"
+	"{{.M.ModuleName}}/internal/{{.Web.Name}}/biz"
+	"{{.M.ModuleName}}/internal/{{.Web.Name}}/pkg/validation"
 )
 
 // Handler manages the business logic for API requests and event processing.

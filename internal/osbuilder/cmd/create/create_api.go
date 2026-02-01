@@ -25,6 +25,7 @@ type APIOptions struct {
 
 	Kinds      []string // Resource kinds to generate (snake_case recommended)
 	BinaryName string   // Target web server/binary name
+	JobServer  string   // Target job server name (optional)
 	Force      bool     // Overwrite files if they exist
 
 	APIVersion string // API version, e.g., "v1"
@@ -37,16 +38,20 @@ type APIOptions struct {
 
 var (
 	apiLongDesc = templates.LongDesc(`
-		Create API resources for your project.
+        Create API resources for your project.
 
-		This command scaffolds API artifacts (proto, handlers, validation, store, biz, model) for the given kinds.`)
+        This command scaffolds API artifacts (proto, handlers, validation, store, biz, model) for the given kinds.
+        Optionally, it can also scaffold async job handlers if --job-server is specified.`)
 
 	apiExamples = templates.Examples(`
-		# Create API resources for a specific kind
-		osbuilder create api --kinds post --binary-name mb-apiserver
+        # Create API resources for a specific kind
+        osbuilder create api --kinds post --binary-name mb-apiserver
 
-		# Create multiple kinds
-		osbuilder create api --kinds cron_job,job --binary-name mb-apiserver`)
+        # Create API resources and an async job handler in 'mb-jobserver'
+        osbuilder create api --kinds post --binary-name mb-apiserver --job-server mb-jobserver
+
+        # Create multiple kinds
+        osbuilder create api --kinds cron_job,job --binary-name mb-apiserver`)
 )
 
 // NewAPIOptions creates a default APIOptions.
@@ -74,13 +79,14 @@ func NewCmdAPI(factory cmdutil.Factory, ioStreams genericiooptions.IOStreams) *c
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Complete(factory, cmd, args))
 			cmdutil.CheckErr(o.Validate(cmd, args))
-			cmdutil.CheckErr(o.Run(args))
+			cmdutil.CheckErr(o.Run(factory, args))
 		},
 	}
 
 	// Flags
 	cmd.Flags().StringSliceVarP(&o.Kinds, "kinds", "", o.Kinds, "Resource kinds to generate in snake_case (e.g., cron_job).")
 	cmd.Flags().StringVarP(&o.BinaryName, "binary-name", "b", o.BinaryName, "Target binary/web server name (e.g., mb-apiserver).")
+	cmd.Flags().StringVarP(&o.JobServer, "job-server", "j", o.JobServer, "Target job server name to add async logic (e.g., mb-jobserver).")
 	cmd.Flags().BoolVarP(&o.Force, "force", "f", o.Force, "Force overwriting of existing files.")
 	// Add hidden flags
 	cmd.Flags().StringVar(&o.RootDir, "root-dir", "", "Override root directory (hidden flag)")
@@ -121,6 +127,9 @@ func (o *APIOptions) Complete(factory cmdutil.Factory, cmd *cobra.Command, args 
 		o.BinaryName = proj.WebServers[0].Name
 	}
 
+	// If a single job server exists and JobServer not set, do NOT default to it,
+	// as the user might only want API without async jobs. But we can validate later.
+
 	o.Project = proj
 	return nil
 }
@@ -144,7 +153,7 @@ func (o *APIOptions) Validate(cmd *cobra.Command, args []string) error {
 }
 
 // Run generates files for each kind and updates related components.
-func (o *APIOptions) Run(args []string) (err error) {
+func (o *APIOptions) Run(f cmdutil.Factory, args []string) (err error) {
 	defer func() { helper.RecordOSBuilderUsage("api", err) }()
 
 	fm := file.NewFileManager(o.RootDir, o.Force)
@@ -157,6 +166,15 @@ func (o *APIOptions) Run(args []string) (err error) {
 		// Generate files (proto, handlers, validation, store, biz, model)
 		if err := o.GenerateFiles(fm, ws); err != nil {
 			return err
+		}
+
+		if o.JobServer != "" {
+			jobCmd := NewCmdJob(f, o.IOStreams)
+			jobCmd.SetArgs([]string{"--root-dir", o.RootDir, "--binary-name", o.JobServer, "--kinds", kind, "--show-tips=false"})
+			// 执行命令
+			if err := jobCmd.Execute(); err != nil {
+				return err
+			}
 		}
 
 		if ws.WebFramework == known.WebFrameworkGRPC {

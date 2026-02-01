@@ -26,7 +26,18 @@ metadata:
     # - true：采用 gcr.io/distroless/base-debian12:nonroot 基础镜像。生产环境建议设置为 true；
     # - false：采用 debian:bookworm 基础镜像。测试环境建议设置为 fasle；
     # 默认 false
-    distroless: false
+    # 使用 distroless 运行时镜像 的模式
+    # - always: 强制所有环境（Docker构建）都使用 distroless 镜像。
+    #   对应场景：追求极致安全和最小体积，即使是开发阶段也希望尽早暴露环境差异。
+    #   镜像：gcr.io/distroless/base-debian12:nonroot
+    # - never: 强制所有环境都使用标准发行版 (dist) 镜像（如 debian:bookworm）。
+    #   对应场景：需要 Shell 进入容器调试，或者应用依赖了一些 distroless 缺失的系统库。
+    #   镜像：debian:bookworm
+    # - auto: 智能模式，逻辑：
+    #   - 在生产环境构建（如 multi-stage 的 final 阶段）使用 distroless。
+    #   - 在非生产构建（如 runtime-only 或 dev 目标）使用 dist 镜像以方便调试。
+    #  对应场景：开发调试爽，生产部署稳。
+    distrolessMode: auto
   # 控制 Makefile 的生成方式。当前支持以下 3 种：
   # - none：不生成 makefile
   # - structured：生成单个 makefile
@@ -74,22 +85,46 @@ webServers:
     serviceRegistry: none
     # 是否开启数据预加载代码示例
     withPreloader: true 
-    # 是否使用消息队列的方式处理资源
-    messageQueues: 
-      - bookmark # 资源名，格式类似 cron_job
     # 内置的客户端集合，默认 false
     clients:
       - fake
       - oss
+
+# 异步任务服务
 jobServers:
   - binaryName: mb-jobserver
-    xxx: true
-    innerKinds:
-      - post
-      - user
-declServers:
-  - binaryName: mb-apiserver
-declControllers:
-  - binaryName: mb-controller-manager
+    storageType: memory
+    withOTel: true
+    withPreloader: true
+    # 是否禁用 CronJob，默认不禁用。
+    disableCronJob: true
+    clients:
+      - fake
+      - oss
+
+# 消息处理服务
+mqServers:
+  - binaryName: mb-mqserver
+    # 使用的消息队列框架。默认kafka。当前仅支持kafka
+    mqFramework: kafka
+    storageType: memory
+    withOTel: true
+    withPreloader: true
+    clients:
+      - fake
+      - oss
+
+# 命令行工具
 cliTools:
   - binaryName: mbctl
+    clients:
+      - fake
+      - oss
+
+# 声明式 API 服务（暂未实现）
+#declServers:
+  #- binaryName: mb-declserver
+
+# 声明式 API 控制器（暂未实现）
+#declControllers:
+  #- binaryName: mb-controller-manager

@@ -1,3 +1,4 @@
+{{- $D := or .Web .MQ .Job -}}
 package metrics
 
 import (
@@ -30,12 +31,12 @@ func Init(scope string) error {
 
 		// Define custom metrics.
     	createCounter, _ := meter.Int64Counter(
-        	"{{.D.ProjectName | underscore}}_{{.Web.Name}}_resources_created_total",
+        	"{{.M.ProjectName | underscore}}_{{$D.Name}}_resources_created_total",
         	metric.WithDescription("Total number of REST resource create requests"),
     	)
 
     	getCount, _ := meter.Int64Counter(
-        	"{{.D.ProjectName | underscore}}_{{.Web.Name}}_resources_retrieved_total",
+        	"{{.M.ProjectName | underscore}}_{{$D.Name}}_resources_retrieved_total",
         	metric.WithDescription("Total number of REST resource get requests"),
     	)
 

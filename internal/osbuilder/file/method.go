@@ -10,11 +10,19 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
-	"github.com/onexstack/osbuilder/internal/osbuilder/types"
 	"mvdan.cc/gofumpt/format"
+
+	"github.com/onexstack/osbuilder/internal/osbuilder/types"
 )
+
+type RESTFactory interface {
+	GetR() *types.RESTGen
+	GetProj() *types.Project
+	GetClients() []string
+}
 
 func (fm *FileManager) AddNewGRPCMethod(ws *types.WebServer) error {
 	kind, grpcServiceName := ws.R.SingularName, ws.GRPCServiceName
@@ -45,7 +53,7 @@ func (fm *FileManager) AddNewGRPCMethod(ws *types.WebServer) error {
 	return nil
 }
 
-func (fm *FileManager) AddNewMethod(layer string, filePath string, ws *types.WebServer, importPath string) error {
+func (fm *FileManager) AddNewMethod(layer string, filePath string, rf RESTFactory, importPath string) error {
 	// 加载并解析源文件
 	fset := token.NewFileSet()
 	node, err := parser.ParseFile(fset, filePath, nil, parser.AllErrors|parser.ParseComments)
@@ -54,13 +62,13 @@ func (fm *FileManager) AddNewMethod(layer string, filePath string, ws *types.Web
 	}
 
 	// 修改 AST 节点
-	modifyAST(layer, node, ws)
+	modifyAST(layer, node, rf)
 	// 执行添加 import 操作
 	if layer == "biz" {
 		addImport(fset, node, fmt.Sprintf(
 			`%s%s "%s"`,
-			strings.ToLower(ws.R.SingularName),
-			ws.Proj.M.APIVersion,
+			strings.ToLower(rf.GetR().SingularName),
+			rf.GetProj().M.APIVersion,
 			importPath,
 		), importPath)
 	}
@@ -89,11 +97,11 @@ func (fm *FileManager) AddNewMethod(layer string, filePath string, ws *types.Web
 	return nil
 }
 
-func modifyAST(layer string, node *ast.File, ws *types.WebServer) {
-	kind, version := ws.R.SingularName, ws.Proj.M.APIVersion
+func modifyAST(layer string, node *ast.File, rf RESTFactory) {
+	kind, version := rf.GetR().SingularName, rf.GetProj().M.APIVersion
 	if layer == "store" {
 		addMethodToInterface(node, "IStore", kind, kind+"Store", "// aaa")
-		addMethodToStruct(node, layer, ws)
+		addMethodToStruct(node, layer, rf)
 		return
 	}
 
@@ -101,7 +109,7 @@ func modifyAST(layer string, node *ast.File, ws *types.WebServer) {
 	aliasType := fmt.Sprintf("%s%s", strings.ToLower(kind), version)
 	returnType := fmt.Sprintf("%s.%sBiz", aliasType, kind)
 	addMethodToInterface(node, "IBiz", methodName, returnType, "// bbb")
-	addMethodToStruct(node, layer, ws)
+	addMethodToStruct(node, layer, rf)
 }
 
 func addMethodToInterface(node *ast.File, interfaceName, methodName, returnType, comment string) {
@@ -163,12 +171,12 @@ func addMethodToInterface(node *ast.File, interfaceName, methodName, returnType,
 	}
 }
 
-func addMethodToStruct(file *ast.File, layer string, ws *types.WebServer) {
-	kind, version := ws.R.SingularName, ws.Proj.M.APIVersion
+func addMethodToStruct(file *ast.File, layer string, rf RESTFactory) {
+	kind, version := rf.GetR().SingularName, rf.GetProj().M.APIVersion
 	recv := "b"
 	retType := fmt.Sprintf("%s%s.%sBiz", strings.ToLower(kind), version, kind)
 	body := fmt.Sprintf("%s%s.New(b.store)", strings.ToLower(kind), version)
-	if len(ws.Clients) > 0 {
+	if len(rf.GetClients()) > 0 {
 		body = fmt.Sprintf("%s%s.New(b.store, b.clientset)", strings.ToLower(kind), version)
 	}
 	methodName := fmt.Sprintf("%s%s", kind, strings.ToUpper(version))
@@ -402,4 +410,86 @@ func hasImport(f *ast.File, packageName string) bool {
 	}
 
 	return hasImport
+}
+
+func (fm *FileManager) AddImportToFile(filePath string, aliasName, importPath string) error {
+	// 1. 读取并解析文件
+	fset := token.NewFileSet()
+	node, err := parser.ParseFile(fset, filePath, nil, parser.ParseComments)
+	if err != nil {
+		return fmt.Errorf("解析文件失败: %w", err)
+	}
+
+	// 2. 检查导入是否已存在
+	for _, imp := range node.Imports {
+		if imp.Path.Value == strconv.Quote(importPath) {
+			return nil
+		}
+	}
+
+	// 3. 构建新的导入节点
+	newImport := &ast.ImportSpec{
+		Name: &ast.Ident{Name: aliasName},
+		Path: &ast.BasicLit{
+			Kind:  token.STRING,
+			Value: strconv.Quote(importPath),
+		},
+	}
+
+	// 4. 将新导入添加到 AST 中 (假设 addImportToAST 已定义)
+	addImportToAST(node, newImport)
+
+	// 5. 将 AST 转换为字节流 (使用标准库 go/format)
+	var buf bytes.Buffer
+	if err := printer.Fprint(&buf, fset, node); err != nil {
+		return err
+	}
+
+	formatted, err := format.Source(buf.Bytes(), format.Options{})
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(filePath, formatted, 0o644); err != nil {
+		return err
+	}
+
+	fm.Print(Updated, filePath)
+	return nil
+}
+
+// addImportToAST 辅助函数：将 ImportSpec 添加到文件的声明列表中
+func addImportToAST(file *ast.File, newImp *ast.ImportSpec) {
+	// 查找现有的 import 声明块
+	var importDecl *ast.GenDecl
+
+	// 遍历所有顶层声明
+	for _, decl := range file.Decls {
+		if genDecl, ok := decl.(*ast.GenDecl); ok && genDecl.Tok == token.IMPORT {
+			importDecl = genDecl
+			// 找到第一个 import 块通常就够了（通常推荐只有一个 import 块）
+			break
+		}
+	}
+
+	if importDecl != nil {
+		// 情况 A: 已经有 import (...) 块，追加到里面
+		// 为了美观，通常添加到最后
+		importDecl.Specs = append(importDecl.Specs, newImp)
+	} else {
+		// 情况 B: 文件没有 import 块，创建一个新的
+		newDecl := &ast.GenDecl{
+			Tok:    token.IMPORT,
+			Lparen: token.NoPos, // 如果想强制多行括号形式，可以设为一个非零值，但 format.Node 通常会自动处理
+			Specs:  []ast.Spec{newImp},
+		}
+
+		// 将新的 import 声明插入到 package 声明之后
+		// 通常 package 是第一个，所以我们可以把 import 插到 Decls 的最前面
+		// (如果原本有其他 const/var 在前，逻辑可能需要更复杂，但通常 import 紧跟 package)
+		newDecls := make([]ast.Decl, 0, len(file.Decls)+1)
+		newDecls = append(newDecls, newDecl)
+		newDecls = append(newDecls, file.Decls...)
+		file.Decls = newDecls
+	}
 }

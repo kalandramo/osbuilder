@@ -43,7 +43,7 @@ func main() {
 
 	testCases := []struct {
 		name  string
-		event *{{.D.APIAlias}}.BookmarkEventEnvelope
+		event *{{.M.APIAlias}}.BookmarkEventEnvelope
 	}{
 		{"CreatedEvent", newCreatedEvent()},
 		{"UpdatedEvent", newUpdatedEvent()},
@@ -71,7 +71,7 @@ func main() {
 
 		// Increment WaitGroup only after successful setup to avoid deadlocks on continue.
 		wg.Add(1)
-		go func(name string, evt *{{.D.APIAlias}}.BookmarkEventEnvelope, traceStr string) {
+		go func(name string, evt *{{.M.APIAlias}}.BookmarkEventEnvelope, traceStr string) {
 			defer wg.Done()
 			sendEvent(ctx, client, name, evt, traceStr)
 		}(tc.name, tc.event, traceParent)
@@ -82,7 +82,7 @@ func main() {
 }
 
 // sendEvent serializes the protobuf message and produces it to Kafka synchronously.
-func sendEvent(ctx context.Context, client *kgo.Client, name string, event *{{.D.APIAlias}}.BookmarkEventEnvelope, traceParent string) {
+func sendEvent(ctx context.Context, client *kgo.Client, name string, event *{{.M.APIAlias}}.BookmarkEventEnvelope, traceParent string) {
 	marshaler := protojson.MarshalOptions{
 		UseProtoNames:   true,
 		EmitUnpopulated: true,
@@ -126,25 +126,25 @@ func sendEvent(ctx context.Context, client *kgo.Client, name string, event *{{.D
 }
 
 // newCreatedEvent constructs a sample bookmark creation event.
-func newCreatedEvent() *{{.D.APIAlias}}.BookmarkEventEnvelope {
-	return &{{.D.APIAlias}}.BookmarkEventEnvelope{
+func newCreatedEvent() *{{.M.APIAlias}}.BookmarkEventEnvelope {
+	return &{{.M.APIAlias}}.BookmarkEventEnvelope{
 		EventID:   uuid.NewString(),
 		Timestamp: time.Now().UnixMilli(),
-		Type:      {{.D.APIAlias}}.BookmarkEventType_BOOKMARK_EVENT_TYPE_CREATED,
-		Payload: &{{.D.APIAlias}}.BookmarkEventEnvelope_Created{
-			Created: &{{.D.APIAlias}}.CreateBookmarkRequest{},
+		Type:      {{.M.APIAlias}}.BookmarkEventType_BOOKMARK_EVENT_TYPE_CREATED,
+		Payload: &{{.M.APIAlias}}.BookmarkEventEnvelope_Created{
+			Created: &{{.M.APIAlias}}.CreateBookmarkRequest{},
 		},
 	}
 }
 
 // newUpdatedEvent constructs a sample bookmark update event.
-func newUpdatedEvent() *{{.D.APIAlias}}.BookmarkEventEnvelope {
-	return &{{.D.APIAlias}}.BookmarkEventEnvelope{
+func newUpdatedEvent() *{{.M.APIAlias}}.BookmarkEventEnvelope {
+	return &{{.M.APIAlias}}.BookmarkEventEnvelope{
 		EventID:   uuid.NewString(),
 		Timestamp: time.Now().UnixMilli(),
-		Type:      {{.D.APIAlias}}.BookmarkEventType_BOOKMARK_EVENT_TYPE_UPDATED,
-		Payload: &{{.D.APIAlias}}.BookmarkEventEnvelope_Updated{
-			Updated: &{{.D.APIAlias}}.UpdateBookmarkRequest{
+		Type:      {{.M.APIAlias}}.BookmarkEventType_BOOKMARK_EVENT_TYPE_UPDATED,
+		Payload: &{{.M.APIAlias}}.BookmarkEventEnvelope_Updated{
+			Updated: &{{.M.APIAlias}}.UpdateBookmarkRequest{
 				BookmarkID: "bm-2024-001",
 			},
 		},
@@ -152,13 +152,13 @@ func newUpdatedEvent() *{{.D.APIAlias}}.BookmarkEventEnvelope {
 }
 
 // newDeletedEvent constructs a sample bookmark deletion event.
-func newDeletedEvent() *{{.D.APIAlias}}.BookmarkEventEnvelope {
-	return &{{.D.APIAlias}}.BookmarkEventEnvelope{
+func newDeletedEvent() *{{.M.APIAlias}}.BookmarkEventEnvelope {
+	return &{{.M.APIAlias}}.BookmarkEventEnvelope{
 		EventID:   uuid.NewString(),
 		Timestamp: time.Now().UnixMilli(),
-		Type:      {{.D.APIAlias}}.BookmarkEventType_BOOKMARK_EVENT_TYPE_DELETED,
-		Payload: &{{.D.APIAlias}}.BookmarkEventEnvelope_Deleted{
-			Deleted: &{{.D.APIAlias}}.DeleteBookmarkRequest{
+		Type:      {{.M.APIAlias}}.BookmarkEventType_BOOKMARK_EVENT_TYPE_DELETED,
+		Payload: &{{.M.APIAlias}}.BookmarkEventEnvelope_Deleted{
+			Deleted: &{{.M.APIAlias}}.DeleteBookmarkRequest{
 				BookmarkID: "bm-2024-001",
 			},
 		},

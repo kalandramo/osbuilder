@@ -1,0 +1,1 @@
+../../apiserver/model/post.gen.go

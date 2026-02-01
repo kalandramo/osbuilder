@@ -4,7 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/trace"
 
-	"{{.D.ModuleName}}/internal/pkg/contextx"
+	"{{.M.ModuleName}}/internal/pkg/contextx"
 )
 
 // Context is a middleware that injects common prefix fields to gin.Context.

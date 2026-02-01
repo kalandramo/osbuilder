@@ -1,6 +1,6 @@
 ## 用户手册
 
-本用户手册详细介绍了，如何安装、使用 {{.D.ProjectName}}。具体内容如下：
+本用户手册详细介绍了，如何安装、使用 {{.M.ProjectName}}。具体内容如下：
 
 - [动态与公告](./announcements.md)
 - [产品介绍](./introduction/README.md)

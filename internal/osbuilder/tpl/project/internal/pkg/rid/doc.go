@@ -1,1 +1,1 @@
-package rid // import "{{.D.ModuleName}}/internal/pkg/rid"
+package rid // import "{{.M.ModuleName}}/internal/pkg/rid"

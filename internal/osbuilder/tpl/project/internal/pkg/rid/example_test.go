@@ -3,7 +3,7 @@ package rid_test
 import (
 	"fmt"
 
-	"{{.D.ModuleName}}/internal/pkg/rid"
+	"{{.M.ModuleName}}/internal/pkg/rid"
 )
 
 func ExampleResourceID_String() {

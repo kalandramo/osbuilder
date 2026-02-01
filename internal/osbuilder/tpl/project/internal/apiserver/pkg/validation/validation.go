@@ -1,15 +1,16 @@
+{{- $D := or .Web .MQ .Job -}}
 package validation
 
 import (
-	{{- if .Web.WithUser }}
+	{{- if and .Web .Web.WithUser }}
 	"regexp"
 
 	{{- end}}
 	"github.com/google/wire"
 
-	"{{.D.ModuleName}}/internal/{{.Web.Name}}/store"
-	{{- if .Web.WithUser }}
-	"{{.D.ModuleName}}/internal/pkg/errno"
+	"{{.M.ModuleName}}/internal/{{$D.Name}}/store"
+	{{- if and .Web .Web.WithUser }}
+	"{{.M.ModuleName}}/internal/pkg/errno"
 	{{- end}}
 )
 
@@ -22,7 +23,7 @@ type Validator struct {
 	store store.IStore
 }
 
-{{- if .Web.WithUser }}
+{{- if and .Web .Web.WithUser }}
 // Use globally precompiled regular expressions to avoid creating and compiling them repeatedly.
 var (
 	lengthRegex = regexp.MustCompile(`^.{3,20}$`)                                        // Length between 3 and 20 characters
@@ -42,7 +43,7 @@ func New(ds store.IStore) *Validator {
 	return &Validator{store: ds}
 }
 
-{{- if .Web.WithUser }}
+{{- if and .Web .Web.WithUser }}
 // isValidUsername validates if a username is valid.
 func isValidUsername(username string) bool {
 	// Validate length

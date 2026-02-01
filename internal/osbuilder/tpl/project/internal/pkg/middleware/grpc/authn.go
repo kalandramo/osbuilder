@@ -7,10 +7,10 @@ import (
 	"github.com/onexstack/onexstack/pkg/token"
 	"google.golang.org/grpc"
 
-	"{{.D.ModuleName}}/internal/pkg/contextx"
-	"{{.D.ModuleName}}/internal/pkg/errno"
-	"{{.D.ModuleName}}/internal/pkg/known"
-	"{{.D.ModuleName}}/internal/{{.Web.Name}}/model"
+	"{{.M.ModuleName}}/internal/pkg/contextx"
+	"{{.M.ModuleName}}/internal/pkg/errno"
+	"{{.M.ModuleName}}/internal/pkg/known"
+	"{{.M.ModuleName}}/internal/{{.Web.Name}}/model"
 )
 
 // UserRetriever 用于根据用户名获取用户信息的接口.

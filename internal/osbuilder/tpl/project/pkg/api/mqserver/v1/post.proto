@@ -1,0 +1,125 @@
+// This file defines the Protobuf messages for managing {{.MQ.R.PluralName}}.
+//
+syntax = "proto3"; // Specifies the syntax version used in this file.
+
+package {{.MQ.Name}}.{{.M.APIVersion}};
+
+import "google/protobuf/timestamp.proto"; // Importing Google's timestamp type for date/time fields.
+
+// Specifies the Go package for generated code.
+option go_package = "{{.M.ModuleName}}/pkg/api/{{.MQ.Name}}/{{.M.APIVersion}};{{.M.APIVersion}}";
+
+enum {{.MQ.R.SingularName}}EventType {
+  {{.MQ.R.SingularName | toupper}}_EVENT_TYPE_UNSPECIFIED = 0;
+  {{.MQ.R.SingularName | toupper}}_EVENT_TYPE_CREATED = 1;
+  {{.MQ.R.SingularName | toupper}}_EVENT_TYPE_UPDATED = 2;
+  {{.MQ.R.SingularName | toupper}}_EVENT_TYPE_DELETED = 3;
+  {{.MQ.R.SingularName | toupper}}_EVENT_TYPE_COLLECTION_DELETED= 4;
+}
+
+message {{.MQ.R.SingularName}}EventEnvelope {
+  string eventID = 1;
+  int64 timestamp = 2;
+  {{.MQ.R.SingularName}}EventType type = 3;
+
+  oneof payload {
+    Create{{.MQ.R.SingularName}}Request created = 4;
+    Update{{.MQ.R.SingularName}}Request updated = 5;
+    Delete{{.MQ.R.SingularName}}Request deleted = 6;
+    Delete{{.MQ.R.PluralName}}Request collection_deleted = 7;
+  }
+}
+
+// {{.MQ.R.SingularName}} represents a {{.MQ.R.SingularLower}} with its metadata.
+message {{.MQ.R.SingularName}} {
+    // {{.MQ.R.SingularName}}ID is the unique identifier for the {{.MQ.R.SingularLower}}.
+    string {{.MQ.R.SingularLowerFirst}}ID = 1;
+    // CreatedAt is the timestamp when the {{.MQ.R.SingularLower}} was created.
+    google.protobuf.Timestamp createdAt = 2;
+    // UpdatedAt is the timestamp when the {{.MQ.R.SingularLower}} was last updated.
+    google.protobuf.Timestamp updatedAt = 3;
+    // TODO: Add additional fields if needed.
+}
+
+// Create{{.MQ.R.SingularName}}Request represents the request message for creating a new {{.MQ.R.SingularLower}}.
+message Create{{.MQ.R.SingularName}}Request {
+    // TODO: Add additional fields if needed.
+}
+
+// Create{{.MQ.R.SingularName}}Response represents the response message for a successful {{.MQ.R.SingularLower}} creation.
+message Create{{.MQ.R.SingularName}}Response {
+    // {{.MQ.R.SingularName}}ID is the unique identifier of the newly created {{.MQ.R.SingularLower}}.
+    string {{.MQ.R.SingularLowerFirst}}ID = 1;
+    // TODO: Add additional fields to return if needed.
+}
+
+// Update{{.MQ.R.SingularName}}Request represents the request message for updating an existing {{.MQ.R.SingularLower}}.
+message Update{{.MQ.R.SingularName}}Request {
+    // {{.MQ.R.SingularName}}ID is the unique identifier of the {{.MQ.R.SingularLower}} to update.
+    // @gotags: uri:"{{.MQ.R.SingularLowerFirst}}ID"
+    string {{.MQ.R.SingularLowerFirst}}ID = 1;
+    // TODO: Add additional fields to update if needed.
+}
+
+// Update{{.MQ.R.SingularName}}Response represents the response message for a successful {{.MQ.R.SingularLower}} update.
+message Update{{.MQ.R.SingularName}}Response {
+    // TODO: Add additional fields to return if needed.
+}
+
+// Delete{{.MQ.R.SingularName}}Request represents the request message for delete a single {{.MQ.R.SingularName}} specified by a URI parameter.
+message Delete{{.MQ.R.SingularName}}Request {
+    // {{.MQ.R.SingularName}}ID is the unique identifier for the {{.MQ.R.SingularLower}} to delete.
+    // @gotags: uri:"{{.MQ.R.SingularLowerFirst}}ID"
+    string {{.MQ.R.SingularLowerFirst}}ID = 1;
+    // TODO: Add additional fields if needed.
+}
+
+// Delete{{.MQ.R.SingularName}}Response represents the response message for a successful {{.MQ.R.SingularName}} deletion.
+message Delete{{.MQ.R.SingularName}}Response {
+    // TODO: Add additional fields to return if needed.
+}
+
+// Delete{{.MQ.R.PluralName}}Request represents the request message for deleting one or more {{.MQ.R.PluralLower}}.
+message Delete{{.MQ.R.PluralName}}Request {
+    // {{.MQ.R.SingularName}}IDs is the list of unique identifiers for the {{.MQ.R.PluralLower}} to delete.
+    repeated string {{.MQ.R.SingularLowerFirst}}IDs = 1;
+    // TODO: Add additional fields if needed.
+}
+
+// Delete{{.MQ.R.PluralName}}Response represents the response message for a successful {{.MQ.R.PluralLower}} deletion.
+message Delete{{.MQ.R.PluralName}}Response {
+    // TODO: Add additional fields to return if needed.
+}
+
+// Get{{.MQ.R.SingularName}}Request represents the request message for retrieving a specific {{.MQ.R.SingularLower}}.
+message Get{{.MQ.R.SingularName}}Request {
+    // {{.MQ.R.SingularName}}ID is the unique identifier of the {{.MQ.R.SingularLower}} to retrieve.
+    // @gotags: uri:"{{.MQ.R.SingularLowerFirst}}ID"
+    string {{.MQ.R.SingularLowerFirst}}ID = 1;
+}
+
+// Get{{.MQ.R.SingularName}}Response represents the response message for a successful retrieval of a {{.MQ.R.SingularLower}}.
+message Get{{.MQ.R.SingularName}}Response {
+    // {{.MQ.R.SingularName}} is the retrieved {{.MQ.R.SingularLower}} object.
+    {{.MQ.R.SingularName}} {{.MQ.R.SingularLowerFirst}} = 1;
+}
+
+// List{{.MQ.R.SingularName}}Request represents the request message for listing {{.MQ.R.PluralLower}}
+// with pagination and optional filters.
+message List{{.MQ.R.SingularName}}Request {
+    // Offset is the starting point of the list for pagination.
+    // @gotags: form:"offset"
+    int64 offset = 1;
+    // Limit is the maximum number of {{.MQ.R.PluralLower}} to return.
+    // @gotags: form:"limit"
+    int64 limit = 2;
+    // TODO: Add additional query fields if needed.
+}
+
+// List{{.MQ.R.SingularName}}Response represents the response message for listing {{.MQ.R.PluralLower}}.
+message List{{.MQ.R.SingularName}}Response {
+    // TotalCount is the total number of {{.MQ.R.PluralLower}} matching the query.
+    int64 total = 1;
+    // {{.MQ.R.SingularName}} is the list of {{.MQ.R.PluralLower}} in the current page.
+    repeated {{.MQ.R.SingularName}} {{.MQ.R.PluralLowerFirst}} = 2;
+}

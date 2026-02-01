@@ -8,10 +8,10 @@ PROJ_ROOT_DIR := $(strip $(abspath $(shell cd $(COMMON_SELF_DIR)/ && pwd -P)))
 OUTPUT_DIR := $(PROJ_ROOT_DIR)/_output
 # Path to Protobuf files
 APIROOT=$(PROJ_ROOT_DIR)/pkg/api
-ROOT_PACKAGE={{.D.ModuleName}}
+ROOT_PACKAGE={{.M.ModuleName}}
 DOCKERFILE_DIR=$(PROJ_ROOT_DIR)/build/docker
-REGISTRY_PREFIX ?= {{.D.RegistryPrefix}}
-{{- if hasMemoryStorageType .WebServers }}
+REGISTRY_PREFIX ?= {{.M.RegistryPrefix}}
+{{- if or (hasMemoryStorageType .WebServers) (hasMemoryStorageType .MQServers ) (hasMemoryStorageType .JobServers )}}
 CGO_ENABLED ?= 1
 {{- else}}
 CGO_ENABLED ?= 0
@@ -102,7 +102,11 @@ endif
 
 # Define the Makefile `all` phony target. When `make` is executed, it will default to executing the `all` target.
 .PHONY: all
-all: deps protoc tidy format generate build cover
+{{- if or .Web .MQ }}
+all: deps protoc tidy format generate build
+{{- else }}
+all: tidy format generate build
+{{- end}}
 
 # ==============================================================================
 # Usage

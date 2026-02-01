@@ -15,8 +15,8 @@ import (
 
 // ExampleCreateUserRequest 创建一个示例的 CreateUserRequest 对象
 // 返回一个指针类型的 CreateUserRequest，其中包含随机生成的用户名、固定密码、昵称、邮箱和随机生成的手机号
-func ExampleCreateUserRequest() *{{.D.APIAlias}}.CreateUserRequest {
-	return &{{.D.APIAlias}}.CreateUserRequest{
+func ExampleCreateUserRequest() *{{.M.APIAlias}}.CreateUserRequest {
+	return &{{.M.APIAlias}}.CreateUserRequest{
 		Username: fmt.Sprintf("%d", time.Now().Unix()), // 随机生成一个单词作为用户名，并转换为小写
 		Password: "onex(#)666",                         // 设置固定密码
 		Nickname: ptr.To("孔令飞"),                        // 设置固    定昵称
@@ -49,9 +49,9 @@ func GeneratePhoneNumber() string {
 // - client: {{.Web.GRPCServiceName}}Client 客户端，用于调用登录接口
 // 返回：
 // - 一个附加了管理员 Token 的上下文对象
-func MustWithAdminToken(ctx context.Context, client {{.D.APIAlias}}.{{.Web.GRPCServiceName}}Client) context.Context {
+func MustWithAdminToken(ctx context.Context, client {{.M.APIAlias}}.{{.Web.GRPCServiceName}}Client) context.Context {
 	// 使用 root 用户登录
-	loginResponse, err := client.Login(ctx, &{{.D.APIAlias}}.LoginRequest{
+	loginResponse, err := client.Login(ctx, &{{.M.APIAlias}}.LoginRequest{
 		Username: "root",         // 固定的管理员用户名
 		Password: "miniblog1234", // 固定的管理员密码
 	})

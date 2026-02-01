@@ -1,11 +1,12 @@
-// ModifierExample 示例 API 定义，用于展示 Protobuf 修饰符和字段类型
-syntax = "proto3"; // 告诉编译器此文件使用什么版本的语法
+{{- $D := or .Web .MQ .Job -}}
+syntax = "proto3"; // Specifies the syntax version used in this file.
 
-package {{.Web.Name}}.{{.D.APIVersion}};
+package {{$D.Name}}.{{.M.APIVersion}};
 
-import "google/protobuf/timestamp.proto";
+import "google/protobuf/timestamp.proto"; // Importing Google's timestamp type for date/time fields.
 
-option go_package = "{{.D.ModuleName}}/pkg/api/{{.Web.Name}}/{{.D.APIVersion}};{{.D.APIVersion}}";
+// Specifies the Go package for generated code.
+option go_package = "{{.M.ModuleName}}/pkg/api/{{$D.Name}}/{{.M.APIVersion}};{{.M.APIVersion}}";
 
 // UserStatus 枚举表示用户的状态
 enum UserStatus {

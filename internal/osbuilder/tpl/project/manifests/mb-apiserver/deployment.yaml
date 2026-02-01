@@ -1,0 +1,118 @@
+{{- $D := or .Web .MQ .Job -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{$D.BinaryName}}
+  labels:
+    app: {{$D.BinaryName}}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
+  selector:
+    matchLabels:
+      app: {{$D.BinaryName}}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: {{$D.BinaryName}}
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: node-role.kubernetes.io/control-plane
+                operator: In
+                values:
+                - ""
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app: {{$D.BinaryName}}
+              topologyKey: kubernetes.io/hostname
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      - key: CriticalAddonsOnly
+        operator: Exists
+      containers:
+      - name: {{$D.BinaryName}}
+        image:  docker.io/{{.M.RegistryPrefix}}/{{$D.BinaryName}}:v0.0.0
+        imagePullPolicy: IfNotPresent
+        command:
+        - /app/{{$D.BinaryName}}
+        - --config=/app/etc/{{$D.BinaryName}}.yaml
+        ports:
+        - name: http
+          containerPort: 5555
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 20m
+            memory: 100Mi
+          limits:
+            cpu: 50m
+            memory: 128Mi
+        #readinessProbe:
+          #httpGet:
+            #path: /healthz
+            #port: http
+          #initialDelaySeconds: 5
+          #periodSeconds: 10
+          #timeoutSeconds: 2
+          #failureThreshold: 3
+        #livenessProbe:
+          #httpGet:
+            #path: /healthz
+            #port: http
+          #initialDelaySeconds: 15
+          #periodSeconds: 20
+          #timeoutSeconds: 2
+          #failureThreshold: 3
+        volumeMounts:
+        - name: {{$D.BinaryName}}
+          mountPath: /app/etc/{{$D.BinaryName}}.yaml
+          subPath: {{$D.BinaryName}}.yaml
+          readOnly: true
+        - name: host-time
+          mountPath: /etc/localtime
+          readOnly: true
+        - name: tmp-dir          # 新增挂载
+          mountPath: /tmp        # 挂载到 /tmp，默认读写
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        securityContext:
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: {{$D.BinaryName}}
+        configMap:
+          name: {{$D.BinaryName}}
+          defaultMode: 420
+          items:
+          - key: {{$D.BinaryName}}.yaml
+            path: {{$D.BinaryName}}.yaml
+      - name: host-time
+        hostPath:
+          path: /etc/localtime
+          type: "FileOrCreate"
+      - name: tmp-dir            # 新增 emptyDir 卷
+        emptyDir: {}

@@ -18,26 +18,26 @@ import (
 	"github.com/onexstack/onexstack/pkg/token"
 	{{- end}}
 
-	"{{.D.ModuleName}}/internal/{{.Web.Name}}/handler"
+	"{{.M.ModuleName}}/internal/{{.Web.Name}}/handler"
     {{- if .Web.WithPreloader}}
-	"{{.D.ModuleName}}/internal/{{.Web.Name}}/pkg/asyncstore"
+	"{{.M.ModuleName}}/internal/{{.Web.Name}}/pkg/asyncstore"
 	{{- end}}
 	{{- range .Web.Clients }}
-	"{{$.D.ModuleName}}/internal/{{$.Web.Name}}/pkg/clientset/typed/{{. | lowerkind}}"
+	"{{$.M.ModuleName}}/internal/{{$.Web.Name}}/pkg/clientset/typed/{{. | lowerkind}}"
 	{{- end}}
     {{- if .Web.WithUser}}
-	"{{.D.ModuleName}}/internal/pkg/contextx"
-	"{{.D.ModuleName}}/internal/pkg/known"
+	"{{.M.ModuleName}}/internal/pkg/contextx"
+	"{{.M.ModuleName}}/internal/pkg/known"
 	{{- if eq .Web.WebFramework "gin" }}
-	mw "{{.D.ModuleName}}/internal/pkg/middleware/gin"
+	mw "{{.M.ModuleName}}/internal/pkg/middleware/gin"
 	{{- else if eq .Web.WebFramework "grpc"}}
-	mw "{{.D.ModuleName}}/internal/pkg/middleware/grpc"
+	mw "{{.M.ModuleName}}/internal/pkg/middleware/grpc"
 	{{- end}}
-	"{{.D.ModuleName}}/internal/{{.Web.Name}}/store"
-	"{{.D.ModuleName}}/internal/{{.Web.Name}}/model"
+	"{{.M.ModuleName}}/internal/{{.Web.Name}}/store"
+	"{{.M.ModuleName}}/internal/{{.Web.Name}}/model"
 	{{- end}}
 	{{- if .Web.WithOTel}}
-    "{{.D.ModuleName}}/internal/{{.Web.Name}}/pkg/metrics"
+    "{{.M.ModuleName}}/internal/{{.Web.Name}}/pkg/metrics"
     {{- end}}
 )
 
@@ -121,7 +121,7 @@ func (s *Server) Prepare(ctx context.Context) (*Server, error) {
 	{{- end}}
 
 	{{- if .Web.WithOTel}}
-	metrics.Init(serviceName)
+	_ = metrics.Init(serviceName)
 	{{- end}}
     return s, nil
 }

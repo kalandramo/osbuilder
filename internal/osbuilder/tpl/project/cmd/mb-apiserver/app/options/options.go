@@ -1,4 +1,3 @@
-// nolint: err113
 package options
 
 import (
@@ -20,7 +19,7 @@ import (
 	"github.com/spf13/pflag"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
-	"{{.D.ModuleName}}/internal/{{.Web.Name}}"
+	"{{.M.ModuleName}}/internal/{{.Web.Name}}"
 )
 
 // ServerOptions contains the configuration options for the server.
@@ -43,7 +42,7 @@ type ServerOptions struct {
 	{{- end}}
 	{{- if eq .Web.StorageType "mariadb"}}
 	// MySQLOptions contains the MySQL configuration options.
-	MySQLOptions *genericoptions.MySQLOptions `json:"mysql" mapstructure:"mysql"`
+	MySQLOptions *genericoptions.MySQLOptions `json:"coredb" mapstructure:"coredb"`
 	{{- end}}
 	{{- if eq .Web.StorageType "postgresql"}}
 	// PostgreSQLOptions contains the PostgreSQL configuration options.
@@ -151,7 +150,7 @@ func (o *ServerOptions) AddFlags(fs *pflag.FlagSet) {
 	o.GRPCOptions.AddFlags(fs, "grpc")
 	{{- end}}
 	{{- if eq .Web.StorageType "mariadb"}}
-	o.MySQLOptions.AddFlags(fs, "mysql")
+	o.MySQLOptions.AddFlags(fs, "coredb")
 	{{- end}}
 	{{- if eq .Web.StorageType "postgresql"}}
 	o.PostgreSQLOptions.AddFlags(fs, "postgresql")

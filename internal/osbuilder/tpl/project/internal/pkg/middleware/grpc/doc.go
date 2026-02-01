@@ -1,1 +1,1 @@
-package grpc // import "{{.D.ModuleName}}/internal/pkg/middleware/grpc"
+package grpc // import "{{.M.ModuleName}}/internal/pkg/middleware/grpc"

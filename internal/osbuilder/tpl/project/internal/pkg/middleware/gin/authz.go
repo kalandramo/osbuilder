@@ -6,8 +6,8 @@ import (
     "github.com/gin-gonic/gin"
     "github.com/onexstack/onexstack/pkg/core"
 
-    "{{.D.ModuleName}}/internal/pkg/contextx"
-    "{{.D.ModuleName}}/internal/pkg/errno"
+    "{{.M.ModuleName}}/internal/pkg/contextx"
+    "{{.M.ModuleName}}/internal/pkg/errno"
 )
 
 // Authorizer defines the interface for authorization implementation.

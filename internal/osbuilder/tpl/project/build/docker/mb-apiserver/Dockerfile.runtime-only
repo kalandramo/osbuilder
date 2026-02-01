@@ -1,66 +1,84 @@
+{{- $D := or .Web .MQ .Job -}}
 # syntax=docker/dockerfile:1.7
 
-# 0) Build args (overridable in CI)
+# =============================================================================
+# 1) Base Images Preparation (Pre-defined base environments)
+# =============================================================================
 ARG BUILDER_IMAGE=debian:bookworm
-{{- if not .Metadata.Image.Distroless }}
-ARG RUNTIME_IMAGE=debian:bookworm
-ARG USER=noroot
-{{- else}}
-ARG RUNTIME_IMAGE=gcr.io/distroless/base-debian12:nonroot
-{{- end}}
 ARG UID=65532
 ARG GID=65532
+ARG USER=noroot
 
-# 1) Use a lightweight builder image with package manager to fetch tini.
-# builder stage does not compile go source files.
+# --- A. Tini Builder (Download tools) ---
 FROM ${BUILDER_IMAGE} AS builder
-
-# Work directory
 WORKDIR /workspace
-
-# Install curl and CA certificates to download tini (used only in the builder stage)
-RUN apt-get update && \                                                                                      
-    apt-get install -y --no-install-recommends curl ca-certificates && \                                     
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl ca-certificates && \
     rm -rf /var/lib/apt/lists/*
-
-# Download the static tini binary (example for amd64); use a different file for other architectures
-# Then make it executable so it can be used as PID 1 in the final image
 RUN curl -fsSL -o /usr/bin/tini https://github.com/krallin/tini/releases/download/v0.19.0/tini-static-amd64 \
  && chmod +x /usr/bin/tini
 
-# 2) Runtime stage
-FROM ${RUNTIME_IMAGE} AS runtime
-
-ARG OS
-ARG ARCH
-{{- if not .Metadata.Image.Distroless }}
-ARG USER
-{{- end}}
+# --- B. Debian Base Prep (Includes tool installation and user creation) ---
+FROM debian:bookworm AS base-debian-prep
 ARG UID
 ARG GID
-
-# App directory
-WORKDIR /app
-
-{{- if not .Metadata.Image.Distroless }}
-
-# Install runtime essentials
+ARG USER
+# Install runtime dependencies
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates tzdata wget curl telnet \
  && rm -rf /var/lib/apt/lists/*
-
-# Security: create a non-root user (ignore if it already exists)
-# Use || true to prevent build failures if the group/user already exists in the base image
+# Create non-root user
 RUN groupadd -g ${GID} ${USER} 2>/dev/null || true \
  && useradd -u ${UID} -g ${USER} ${USER} 2>/dev/null || true
-{{- end}}
 
-# Copy artifact and set ownership; numeric UID:GID is more robust
+# --- C. Distroless Base Prep (Direct reference) ---
+FROM gcr.io/distroless/base-debian12:nonroot AS base-distroless-prep
+
+# =============================================================================
+# 2) Selection Logic (Dynamic selection based on DistrolessMode and ENV)
+# =============================================================================
+{{- $mode := .Metadata.Image.DistrolessMode }}
+# Current Mode: {{ $mode }}
+
+{{- if eq $mode "always" }}
+# [Mode: always] Force use of distroless
+FROM base-distroless-prep AS final-base
+{{- else if eq $mode "never" }}
+# [Mode: never] Force use of debian
+FROM base-debian-prep AS final-base
+{{- else }}
+# [Mode: auto] Dynamic selection based on build argument ENV (Default is prod)
+ARG ENV=prod
+
+# Define Routing Table
+FROM base-distroless-prep AS mode-auto-prod
+FROM base-debian-prep     AS mode-auto-test
+FROM base-debian-prep     AS mode-auto-dev
+
+# Dynamic selection
+FROM mode-auto-${ENV} AS final-base
+{{- end }}
+
+# =============================================================================
+# 3) Runtime Stage (Final runtime)
+# =============================================================================
+FROM final-base AS runtime
+
+ARG OS=linux
+ARG ARCH=amd64
+ARG UID
+ARG GID
+
+WORKDIR /app
+
+# Copy tini from builder (always needed)
 COPY --from=builder --chown=0:0 /usr/bin/tini /usr/bin/tini
-COPY --chown=${UID}:${GID} _output/platforms/${OS}/${ARCH}/{{.Web.BinaryName}} /app/{{.Web.BinaryName}}
 
-# Security: run as non-root
+# Copy artifact (Copy from external build output directory)
+# Note: Assumes the external path structure is _output/platforms/${OS}/${ARCH}/...
+COPY --chown=${UID}:${GID} _output/platforms/${OS}/${ARCH}/{{$D.BinaryName}} /app/{{$D.BinaryName}}
+
+# Security: run as non-root (UID is 65532 for both distroless and debian)
 USER ${UID}:${GID}
 
-# Use tini as minimal init to handle signals and reap zombies
-ENTRYPOINT ["/usr/bin/tini", "--", "/app/{{.Web.BinaryName}}"]
+ENTRYPOINT ["/usr/bin/tini", "--", "/app/{{$D.BinaryName}}"]

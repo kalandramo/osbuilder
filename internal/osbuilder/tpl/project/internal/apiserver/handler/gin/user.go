@@ -8,7 +8,7 @@ import (
     {{- if .Web.WithOTel}}
     "go.opentelemetry.io/otel"
 
-    "{{.D.ModuleName}}/internal/{{.Web.Name}}/pkg/metrics"
+    "{{.M.ModuleName}}/internal/{{.Web.Name}}/pkg/metrics"
     {{- end}}
 )
 

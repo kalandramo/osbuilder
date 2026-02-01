@@ -17,8 +17,8 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
     {{- end}}
 
-	"{{.D.ModuleName}}/internal/pkg/errno"
-	mw "{{.D.ModuleName}}/internal/pkg/middleware/gin"
+	"{{.M.ModuleName}}/internal/pkg/errno"
+	mw "{{.M.ModuleName}}/internal/pkg/middleware/gin"
 )
 
 // ginServer implements the server.Server interface using the Gin framework.
@@ -56,12 +56,11 @@ func (c *ServerConfig) NewGinServer() (server.Server, error) {
 // InstallRESTAPI registers all RESTful API routes to the engine.
 func (c *ServerConfig) InstallRESTAPI(engine *gin.Engine) {
 	InstallGenericAPI(engine)
-
-	{{- if .Web.WithHealthz}}
+	{{if .Web.WithHealthz}}
 	engine.GET("/healthz", c.Handler.Healthz)
 	{{- end}}
 
-	{{.D.APIVersion}} := engine.Group("/{{.D.APIVersion}}")
+	{{.M.APIVersion}} := engine.Group("/{{.M.APIVersion}}")
 
 	{{- if .Web.WithUser}}
 	// Register user login and token refresh interfaces.
@@ -71,9 +70,9 @@ func (c *ServerConfig) InstallRESTAPI(engine *gin.Engine) {
 	engine.PUT("/refresh-token", mw.AuthnMiddleware(c.Retriever), c.Handler.RefreshToken)
 	
 	authMiddlewares := []gin.HandlerFunc{mw.AuthnMiddleware(c.Retriever), mw.AuthzMiddleware(c.Authz)}
-	c.Handler.ApplyTo({{.D.APIVersion}}, authMiddlewares...)
+	c.Handler.ApplyTo({{.M.APIVersion}}, authMiddlewares...)
 	{{- else}}
-	c.Handler.ApplyTo({{.D.APIVersion}})
+	c.Handler.ApplyTo({{.M.APIVersion}})
 	{{- end}}
 }
 

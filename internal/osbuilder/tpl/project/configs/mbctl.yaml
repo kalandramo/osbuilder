@@ -1,0 +1,11 @@
+{{- range .CLI.Clients }}
+{{.}}:
+  # {{.}} 访问地址
+  endpoint: http://127.0.0.1:9999
+  # 访问 {{.}} 时的 User-Agent
+  user-agent: {{$.CLI.BinaryName}}
+  # 开启 resty 客户端的 debug 模式
+  debug: true
+  # 访问远端服务时的超时时间
+  timeout: 30s
+{{- end -}}

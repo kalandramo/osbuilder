@@ -5,8 +5,8 @@ import (
 
 	genericvalidation "github.com/onexstack/onexstack/pkg/validation"
 
-	"{{.D.ModuleName}}/internal/pkg/contextx"
-	"{{.D.ModuleName}}/internal/pkg/errno"
+	"{{.M.ModuleName}}/internal/pkg/contextx"
+	"{{.M.ModuleName}}/internal/pkg/errno"
 	{{.Web.APIImportPath}}
 )
 
@@ -60,12 +60,12 @@ func (v *Validator) ValidateUserRules() genericvalidation.Rules {
 }
 
 // ValidateLogin 校验修改密码请求.
-func (v *Validator) ValidateLoginRequest(ctx context.Context, rq *{{.D.APIAlias}}.LoginRequest) error {
+func (v *Validator) ValidateLoginRequest(ctx context.Context, rq *{{.M.APIAlias}}.LoginRequest) error {
 	return genericvalidation.ValidateAllFields(rq, v.ValidateUserRules())
 }
 
 // ValidateChangePasswordRequest 校验 ChangePasswordRequest 结构体的有效性.
-func (v *Validator) ValidateChangePasswordRequest(ctx context.Context, rq *{{.D.APIAlias}}.ChangePasswordRequest) error {
+func (v *Validator) ValidateChangePasswordRequest(ctx context.Context, rq *{{.M.APIAlias}}.ChangePasswordRequest) error {
 	if rq.GetUserID() != contextx.UserID(ctx) {
 		return errno.ErrPermissionDenied.WithMessage("The logged-in user `%s` does not match request user `%s`", contextx.UserID(ctx), rq.GetUserID())
 	}
@@ -73,12 +73,12 @@ func (v *Validator) ValidateChangePasswordRequest(ctx context.Context, rq *{{.D.
 }
 
 // ValidateCreateUserRequest 校验 CreateUserRequest 结构体的有效性.
-func (v *Validator) ValidateCreateUserRequest(ctx context.Context, rq *{{.D.APIAlias}}.CreateUserRequest) error {
+func (v *Validator) ValidateCreateUserRequest(ctx context.Context, rq *{{.M.APIAlias}}.CreateUserRequest) error {
 	return genericvalidation.ValidateAllFields(rq, v.ValidateUserRules())
 }
 
 // ValidateUpdateUserRequest 校验更新用户请求.
-func (v *Validator) ValidateUpdateUserRequest(ctx context.Context, rq *{{.D.APIAlias}}.UpdateUserRequest) error {
+func (v *Validator) ValidateUpdateUserRequest(ctx context.Context, rq *{{.M.APIAlias}}.UpdateUserRequest) error {
 	if rq.GetUserID() != contextx.UserID(ctx) {
 		return errno.ErrPermissionDenied.WithMessage("The logged-in user `%s` does not match request user `%s`", contextx.UserID(ctx), rq.GetUserID())
 	}
@@ -86,12 +86,12 @@ func (v *Validator) ValidateUpdateUserRequest(ctx context.Context, rq *{{.D.APIA
 }
 
 // ValidateDeleteUserRequest 校验 DeleteUserRequest 结构体的有效性.
-func (v *Validator) ValidateDeleteUserRequest(ctx context.Context, rq *{{.D.APIAlias}}.DeleteUserRequest) error {
+func (v *Validator) ValidateDeleteUserRequest(ctx context.Context, rq *{{.M.APIAlias}}.DeleteUserRequest) error {
 	return genericvalidation.ValidateAllFields(rq, v.ValidateUserRules())
 }
 
 // ValidateGetUserRequest 校验 GetUserRequest 结构体的有效性.
-func (v *Validator) ValidateGetUserRequest(ctx context.Context, rq *{{.D.APIAlias}}.GetUserRequest) error {
+func (v *Validator) ValidateGetUserRequest(ctx context.Context, rq *{{.M.APIAlias}}.GetUserRequest) error {
 	if rq.GetUserID() != contextx.UserID(ctx) {
 		return errno.ErrPermissionDenied.WithMessage("The logged-in user `%s` does not match request user `%s`", contextx.UserID(ctx), rq.GetUserID())
 	}
@@ -99,6 +99,6 @@ func (v *Validator) ValidateGetUserRequest(ctx context.Context, rq *{{.D.APIAlia
 }
 
 // ValidateListUserRequest 校验 ListUserRequest 结构体的有效性.
-func (v *Validator) ValidateListUserRequest(ctx context.Context, rq *{{.D.APIAlias}}.ListUserRequest) error {
+func (v *Validator) ValidateListUserRequest(ctx context.Context, rq *{{.M.APIAlias}}.ListUserRequest) error {
 	return genericvalidation.ValidateAllFields(rq, v.ValidateUserRules())
 }

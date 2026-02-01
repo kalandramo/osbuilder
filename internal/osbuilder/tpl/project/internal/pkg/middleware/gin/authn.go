@@ -8,9 +8,9 @@ import (
     "github.com/onexstack/onexstack/pkg/core"
     "github.com/onexstack/onexstack/pkg/token"
 
-    "{{.D.ModuleName}}/internal/pkg/contextx"
-    "{{.D.ModuleName}}/internal/pkg/errno"
-    "{{.D.ModuleName}}/internal/{{.Web.Name}}/model"
+    "{{.M.ModuleName}}/internal/pkg/contextx"
+    "{{.M.ModuleName}}/internal/pkg/errno"
+    "{{.M.ModuleName}}/internal/{{.Web.Name}}/model"
 )
 
 // UserRetriever is an interface for retrieving user information based on username.

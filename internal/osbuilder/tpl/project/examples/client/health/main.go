@@ -33,7 +33,7 @@ func main() {
 	defer conn.Close() // 确保在函数结束时关闭连接，避免资源泄漏
 
 	// 创建 {{.Web.GRPCServiceName}} 客户端
-	client := {{.D.APIAlias}}.New{{.Web.GRPCServiceName}}Client(conn) // 使用连接创建一个 {{.Web.GRPCServiceName}} 的 gRPC 客户端实例
+	client := {{.M.APIAlias}}.New{{.Web.GRPCServiceName}}Client(conn) // 使用连接创建一个 {{.Web.GRPCServiceName}} 的 gRPC 客户端实例
 
 	// 设置上下文，带有 3 秒的超时时间
 	// context.WithTimeout 用于设置调用的超时时间，防止请求无限等待

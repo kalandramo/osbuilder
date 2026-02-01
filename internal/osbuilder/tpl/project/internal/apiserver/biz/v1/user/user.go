@@ -13,32 +13,32 @@ import (
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"{{.D.ModuleName}}/internal/{{.Web.Name}}/model"
-	"{{.D.ModuleName}}/internal/{{.Web.Name}}/pkg/conversion"
-	"{{.D.ModuleName}}/internal/{{.Web.Name}}/store"
-	"{{.D.ModuleName}}/internal/pkg/contextx"
-	"{{.D.ModuleName}}/internal/pkg/errno"
-	"{{.D.ModuleName}}/internal/pkg/known"
+	"{{.M.ModuleName}}/internal/{{.Web.Name}}/model"
+	"{{.M.ModuleName}}/internal/{{.Web.Name}}/pkg/conversion"
+	"{{.M.ModuleName}}/internal/{{.Web.Name}}/store"
+	"{{.M.ModuleName}}/internal/pkg/contextx"
+	"{{.M.ModuleName}}/internal/pkg/errno"
+	"{{.M.ModuleName}}/internal/pkg/known"
 	{{.Web.APIImportPath}}
 )
 
 // UserBiz 定义处理用户请求所需的方法.
 type UserBiz interface {
-	Create(ctx context.Context, rq *{{.D.APIAlias}}.CreateUserRequest) (*{{.D.APIAlias}}.CreateUserResponse, error)
-	Update(ctx context.Context, rq *{{.D.APIAlias}}.UpdateUserRequest) (*{{.D.APIAlias}}.UpdateUserResponse, error)
-	Delete(ctx context.Context, rq *{{.D.APIAlias}}.DeleteUserRequest) (*{{.D.APIAlias}}.DeleteUserResponse, error)
-	Get(ctx context.Context, rq *{{.D.APIAlias}}.GetUserRequest) (*{{.D.APIAlias}}.GetUserResponse, error)
-	List(ctx context.Context, rq *{{.D.APIAlias}}.ListUserRequest) (*{{.D.APIAlias}}.ListUserResponse, error)
+	Create(ctx context.Context, rq *{{.M.APIAlias}}.CreateUserRequest) (*{{.M.APIAlias}}.CreateUserResponse, error)
+	Update(ctx context.Context, rq *{{.M.APIAlias}}.UpdateUserRequest) (*{{.M.APIAlias}}.UpdateUserResponse, error)
+	Delete(ctx context.Context, rq *{{.M.APIAlias}}.DeleteUserRequest) (*{{.M.APIAlias}}.DeleteUserResponse, error)
+	Get(ctx context.Context, rq *{{.M.APIAlias}}.GetUserRequest) (*{{.M.APIAlias}}.GetUserResponse, error)
+	List(ctx context.Context, rq *{{.M.APIAlias}}.ListUserRequest) (*{{.M.APIAlias}}.ListUserResponse, error)
 
 	UserExpansion
 }
 
 // UserExpansion 定义用户操作的扩展方法.
 type UserExpansion interface {
-	Login(ctx context.Context, rq *{{.D.APIAlias}}.LoginRequest) (*{{.D.APIAlias}}.LoginResponse, error)
-	RefreshToken(ctx context.Context, rq *{{.D.APIAlias}}.RefreshTokenRequest) (*{{.D.APIAlias}}.RefreshTokenResponse, error)
-	ChangePassword(ctx context.Context, rq *{{.D.APIAlias}}.ChangePasswordRequest) (*{{.D.APIAlias}}.ChangePasswordResponse, error)
-	ListWithBadPerformance(ctx context.Context, rq *{{.D.APIAlias}}.ListUserRequest) (*{{.D.APIAlias}}.ListUserResponse, error)
+	Login(ctx context.Context, rq *{{.M.APIAlias}}.LoginRequest) (*{{.M.APIAlias}}.LoginResponse, error)
+	RefreshToken(ctx context.Context, rq *{{.M.APIAlias}}.RefreshTokenRequest) (*{{.M.APIAlias}}.RefreshTokenResponse, error)
+	ChangePassword(ctx context.Context, rq *{{.M.APIAlias}}.ChangePasswordRequest) (*{{.M.APIAlias}}.ChangePasswordResponse, error)
+	ListWithBadPerformance(ctx context.Context, rq *{{.M.APIAlias}}.ListUserRequest) (*{{.M.APIAlias}}.ListUserResponse, error)
 }
 
 // userBiz 是 UserBiz 接口的实现.
@@ -55,7 +55,7 @@ func New(store store.IStore, authz *authz.Authz) *userBiz {
 }
 
 // Login 实现 UserBiz 接口中的 Login 方法.
-func (b *userBiz) Login(ctx context.Context, rq *{{.D.APIAlias}}.LoginRequest) (*{{.D.APIAlias}}.LoginResponse, error) {
+func (b *userBiz) Login(ctx context.Context, rq *{{.M.APIAlias}}.LoginRequest) (*{{.M.APIAlias}}.LoginResponse, error) {
 	// 获取登录用户的所有信息
 	whr := where.F("username", rq.GetUsername())
 	userM, err := b.store.User().Get(ctx, whr)
@@ -76,23 +76,23 @@ func (b *userBiz) Login(ctx context.Context, rq *{{.D.APIAlias}}.LoginRequest) (
 		return nil, errno.ErrSignToken
 	}
 
-	return &{{.D.APIAlias}}.LoginResponse{Token: tokenStr, ExpireAt: timestamppb.New(expireAt)}, nil
+	return &{{.M.APIAlias}}.LoginResponse{Token: tokenStr, ExpireAt: timestamppb.New(expireAt)}, nil
 }
 
 // RefreshToken 用于刷新用户的身份验证令牌.
 // 当用户的令牌即将过期时，可以调用此方法生成一个新的令牌.
-func (b *userBiz) RefreshToken(ctx context.Context, rq *{{.D.APIAlias}}.RefreshTokenRequest) (*{{.D.APIAlias}}.RefreshTokenResponse, error) {
+func (b *userBiz) RefreshToken(ctx context.Context, rq *{{.M.APIAlias}}.RefreshTokenRequest) (*{{.M.APIAlias}}.RefreshTokenResponse, error) {
 	tokenStr, expireAt, err := token.Sign(contextx.UserID(ctx))
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to sign token", "error", err)
 		return nil, errno.ErrSignToken
 	}
 
-	return &{{.D.APIAlias}}.RefreshTokenResponse{Token: tokenStr, ExpireAt: timestamppb.New(expireAt)}, nil
+	return &{{.M.APIAlias}}.RefreshTokenResponse{Token: tokenStr, ExpireAt: timestamppb.New(expireAt)}, nil
 }
 
 // ChangePassword 实现 UserBiz 接口中的 ChangePassword 方法.
-func (b *userBiz) ChangePassword(ctx context.Context, rq *{{.D.APIAlias}}.ChangePasswordRequest) (*{{.D.APIAlias}}.ChangePasswordResponse, error) {
+func (b *userBiz) ChangePassword(ctx context.Context, rq *{{.M.APIAlias}}.ChangePasswordRequest) (*{{.M.APIAlias}}.ChangePasswordResponse, error) {
 	userM, err := b.store.User().Get(ctx, where.T(ctx))
 	if err != nil {
 		return nil, err
@@ -108,11 +108,11 @@ func (b *userBiz) ChangePassword(ctx context.Context, rq *{{.D.APIAlias}}.Change
 		return nil, err
 	}
 
-	return &{{.D.APIAlias}}.ChangePasswordResponse{}, nil
+	return &{{.M.APIAlias}}.ChangePasswordResponse{}, nil
 }
 
 // Create 实现 UserBiz 接口中的 Create 方法.
-func (b *userBiz) Create(ctx context.Context, rq *{{.D.APIAlias}}.CreateUserRequest) (*{{.D.APIAlias}}.CreateUserResponse, error) {
+func (b *userBiz) Create(ctx context.Context, rq *{{.M.APIAlias}}.CreateUserRequest) (*{{.M.APIAlias}}.CreateUserResponse, error) {
 	var userM model.UserM
 	_ = copier.Copy(&userM, rq)
 
@@ -125,11 +125,11 @@ func (b *userBiz) Create(ctx context.Context, rq *{{.D.APIAlias}}.CreateUserRequ
 		return nil, errno.ErrAddRole.WithMessage("%s", err.Error())
 	}
 
-	return &{{.D.APIAlias}}.CreateUserResponse{UserID: userM.UserID}, nil
+	return &{{.M.APIAlias}}.CreateUserResponse{UserID: userM.UserID}, nil
 }
 
 // Update 实现 UserBiz 接口中的 Update 方法.
-func (b *userBiz) Update(ctx context.Context, rq *{{.D.APIAlias}}.UpdateUserRequest) (*{{.D.APIAlias}}.UpdateUserResponse, error) {
+func (b *userBiz) Update(ctx context.Context, rq *{{.M.APIAlias}}.UpdateUserRequest) (*{{.M.APIAlias}}.UpdateUserResponse, error) {
 	userM, err := b.store.User().Get(ctx, where.T(ctx))
 	if err != nil {
 		return nil, err
@@ -152,11 +152,11 @@ func (b *userBiz) Update(ctx context.Context, rq *{{.D.APIAlias}}.UpdateUserRequ
 		return nil, err
 	}
 
-	return &{{.D.APIAlias}}.UpdateUserResponse{}, nil
+	return &{{.M.APIAlias}}.UpdateUserResponse{}, nil
 }
 
 // Delete 实现 UserBiz 接口中的 Delete 方法.
-func (b *userBiz) Delete(ctx context.Context, rq *{{.D.APIAlias}}.DeleteUserRequest) (*{{.D.APIAlias}}.DeleteUserResponse, error) {
+func (b *userBiz) Delete(ctx context.Context, rq *{{.M.APIAlias}}.DeleteUserRequest) (*{{.M.APIAlias}}.DeleteUserResponse, error) {
 	// 只有 `root` 用户可以删除用户，并且可以删除其他用户
 	// 所以这里不用 where.T()，因为 where.T() 会查询 `root` 用户自己
 	if err := b.store.User().Delete(ctx, where.F("userID", rq.GetUserID())); err != nil {
@@ -168,21 +168,21 @@ func (b *userBiz) Delete(ctx context.Context, rq *{{.D.APIAlias}}.DeleteUserRequ
 		return nil, errno.ErrRemoveRole.WithMessage("%s", err.Error())
 	}
 
-	return &{{.D.APIAlias}}.DeleteUserResponse{}, nil
+	return &{{.M.APIAlias}}.DeleteUserResponse{}, nil
 }
 
 // Get 实现 UserBiz 接口中的 Get 方法.
-func (b *userBiz) Get(ctx context.Context, rq *{{.D.APIAlias}}.GetUserRequest) (*{{.D.APIAlias}}.GetUserResponse, error) {
+func (b *userBiz) Get(ctx context.Context, rq *{{.M.APIAlias}}.GetUserRequest) (*{{.M.APIAlias}}.GetUserResponse, error) {
 	userM, err := b.store.User().Get(ctx, where.T(ctx))
 	if err != nil {
 		return nil, err
 	}
 
-	return &{{.D.APIAlias}}.GetUserResponse{User: conversion.UserModelToUserV1(userM)}, nil
+	return &{{.M.APIAlias}}.GetUserResponse{User: conversion.UserModelToUserV1(userM)}, nil
 }
 
 // List 实现 UserBiz 接口中的 List 方法.
-func (b *userBiz) List(ctx context.Context, rq *{{.D.APIAlias}}.ListUserRequest) (*{{.D.APIAlias}}.ListUserResponse, error) {
+func (b *userBiz) List(ctx context.Context, rq *{{.M.APIAlias}}.ListUserRequest) (*{{.M.APIAlias}}.ListUserResponse, error) {
 	whr := where.P(int(rq.GetOffset()), int(rq.GetLimit()))
 	if contextx.Username(ctx) != known.AdminUsername {
 		whr.T(ctx)
@@ -228,19 +228,19 @@ func (b *userBiz) List(ctx context.Context, rq *{{.D.APIAlias}}.ListUserRequest)
 		return nil, err
 	}
 
-	users := make([]*{{.D.APIAlias}}.User, 0, len(userList))
+	users := make([]*{{.M.APIAlias}}.User, 0, len(userList))
 	for _, item := range userList {
 		user, _ := m.Load(item.ID)
-		users = append(users, user.(*{{.D.APIAlias}}.User))
+		users = append(users, user.(*{{.M.APIAlias}}.User))
 	}
 
 	slog.InfoContext(ctx, "Get users from backend storage", "count", len(users))
 
-	return &{{.D.APIAlias}}.ListUserResponse{TotalCount: count, Users: users}, nil
+	return &{{.M.APIAlias}}.ListUserResponse{TotalCount: count, Users: users}, nil
 }
 
 // ListWithBadPerformance 是性能较差的实现方式（已废弃）.
-func (b *userBiz) ListWithBadPerformance(ctx context.Context, rq *{{.D.APIAlias}}.ListUserRequest) (*{{.D.APIAlias}}.ListUserResponse, error) {
+func (b *userBiz) ListWithBadPerformance(ctx context.Context, rq *{{.M.APIAlias}}.ListUserRequest) (*{{.M.APIAlias}}.ListUserResponse, error) {
 	whr := where.P(int(rq.GetOffset()), int(rq.GetLimit()))
 	if contextx.Username(ctx) != known.AdminUsername {
 		whr.T(ctx)
@@ -251,7 +251,7 @@ func (b *userBiz) ListWithBadPerformance(ctx context.Context, rq *{{.D.APIAlias}
 		return nil, err
 	}
 
-	users := make([]*{{.D.APIAlias}}.User, 0, len(userList))
+	users := make([]*{{.M.APIAlias}}.User, 0, len(userList))
 	for _, user := range userList {
 		/*
 		count, _, err := b.store.Posts().List(ctx, where.T(ctx))
@@ -267,5 +267,5 @@ func (b *userBiz) ListWithBadPerformance(ctx context.Context, rq *{{.D.APIAlias}
 
 	slog.InfoContext(ctx, "Get users from backend storage", "count", len(users))
 
-	return &{{.D.APIAlias}}.ListUserResponse{TotalCount: count, Users: users}, nil
+	return &{{.M.APIAlias}}.ListUserResponse{TotalCount: count, Users: users}, nil
 }

@@ -6,7 +6,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 
-	"{{.D.ModuleName}}/internal/pkg/contextx"
+	"{{.M.ModuleName}}/internal/pkg/contextx"
 )
 
 // Context creates a unary server interceptor that injects needed keys into the context.
