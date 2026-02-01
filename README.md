@@ -160,7 +160,7 @@ X-Trace-Id: 95c631460b60aa91ccb477380a8521ba
 
 osbuilder 脚手架支持一个命令，直接创建一个可运行、可测试的企业级 Go 项目框架，创建方式如下：
 ```bash
-$ osbuilder create quickstart
+$ osbuilder create quickstart # 根据提示编译项目即可
 ```
 
 上述命令会在当前目录下创建一个 `miniblog` 项目，按照命令行提示，即可完成项目的编译、运行和测试。

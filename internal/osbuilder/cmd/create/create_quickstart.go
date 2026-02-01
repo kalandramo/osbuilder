@@ -75,8 +75,8 @@ var (
 		  --makefile-mode structured \
 		  --deployment-mode kubernetes \
 		  --registry-prefix docker.io/company \
-		  --distroless \
-		  --binary-name mb-apiserver \
+		  --distroless-mode auto \
+		  --app-prefix mb \
 		  --kinds cron_job,job \
 		  --web-framework gin \
 		  --with-user \
@@ -300,9 +300,15 @@ func (o *QuickstartOptions) applyQuickstartOptions(project *types.Project) *type
 
 	// 修改 WebServers 配置
 	for i := range project.WebServers {
+		binaryName := project.WebServers[i].BinaryName
 		if o.AppPrefix != "" {
-			project.WebServers[i].BinaryName = fmt.Sprintf("%s-apiserver$d", o.AppPrefix, i)
+			binaryName = o.AppPrefix + "-apiserver"
 		}
+		if len(project.WebServers) > 1 {
+			binaryName = fmt.Sprintf("%s%d", binaryName, i)
+		}
+		project.WebServers[i].BinaryName = binaryName
+
 		if o.WebFramework != "" {
 			project.WebServers[i].WebFramework = o.WebFramework
 		}
@@ -318,9 +324,15 @@ func (o *QuickstartOptions) applyQuickstartOptions(project *types.Project) *type
 
 	// 修改 JobServers 配置
 	for i := range project.JobServers {
+		binaryName := project.JobServers[i].BinaryName
 		if o.AppPrefix != "" {
-			project.JobServers[i].BinaryName = fmt.Sprintf("%s-jobserver$d", o.AppPrefix, i)
+			binaryName = o.AppPrefix + "-jobserver"
 		}
+		if len(project.JobServers) > 1 {
+			binaryName = fmt.Sprintf("%s%d", binaryName, i)
+		}
+		project.JobServers[i].BinaryName = binaryName
+
 		project.JobServers[i].WithOTel = o.WithOtel
 		project.JobServers[i].WithPreloader = o.WithPreloader
 		project.JobServers[i].Clients = o.Clients
@@ -328,9 +340,15 @@ func (o *QuickstartOptions) applyQuickstartOptions(project *types.Project) *type
 
 	// 修改 MQServers 配置
 	for i := range project.MQServers {
+		binaryName := project.MQServers[i].BinaryName
 		if o.AppPrefix != "" {
-			project.MQServers[i].BinaryName = fmt.Sprintf("%s-mqserver$d", o.AppPrefix, i)
+			binaryName = o.AppPrefix + "-mqserver"
 		}
+		if len(project.MQServers) > 1 {
+			binaryName = fmt.Sprintf("%s%d", binaryName, i)
+		}
+		project.MQServers[i].BinaryName = binaryName
+
 		project.MQServers[i].WithOTel = o.WithOtel
 		project.MQServers[i].WithPreloader = o.WithPreloader
 		project.MQServers[i].Clients = o.Clients
@@ -338,9 +356,15 @@ func (o *QuickstartOptions) applyQuickstartOptions(project *types.Project) *type
 
 	// 修改 CLITools 配置
 	for i := range project.CLITools {
+		binaryName := project.CLITools[i].BinaryName
 		if o.AppPrefix != "" {
-			project.CLITools[i].BinaryName = fmt.Sprintf("%sctl$d", o.AppPrefix, i)
+			binaryName = o.AppPrefix + "ctl"
 		}
+		if len(project.CLITools) > 1 {
+			binaryName = fmt.Sprintf("%s%d", binaryName, i)
+		}
+		project.CLITools[i].BinaryName = binaryName
+
 		project.CLITools[i].Clients = o.Clients
 	}
 

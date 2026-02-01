@@ -273,48 +273,27 @@ func (o *ProjectOptions) PrintGettingStarted() {
 		color.CyanString("# enter project directory"),
 	)
 
-	if o.Project.Metadata.MakefileMode != known.MakefileModeNone {
-		fmt.Println(
-			color.WhiteString("$ make deps"),
-			color.CyanString("# (Optional, executed when dependencies missing) Install tools required by project."),
-		)
-
-		switch n := len(o.Project.MQServers); {
-		case n == 1:
-			fmt.Println(
-				color.WhiteString("$ make protoc.%s", o.Project.MQServers[0].Name),
-				color.CyanString("# generate gRPC code"),
-			)
-		case n > 0:
-			fmt.Println(
-				color.WhiteString("$ make protoc"),
-				color.CyanString("# generate gRPC code"),
-			)
-		}
-	}
-
-	fmt.Println(
-		color.WhiteString("$ go get cloud.google.com/go/compute@latest"),
-		color.CyanString("# to resolve `cloud.google.com/go/compute/metadata: ambiguous import`"),
-	)
-	fmt.Println(
-		color.WhiteString("$ go get cloud.google.com/go/compute/metadata@latest"),
-	)
-	fmt.Println(
-		color.WhiteString("$ go mod tidy"),
-		color.CyanString("# tidy dependencies"),
-	)
-	fmt.Println(
-		color.WhiteString("$ go generate ./..."),
-		color.CyanString("# run all go:generate directives"),
-	)
-
 	if o.Project.Metadata.MakefileMode == known.MakefileModeNone {
 		PrintClosingTips(o.Project.M.ProjectName)
 		return
 	}
 
-	if len(o.Project.WebServers) == 1 {
+	fmt.Println(
+		color.WhiteString("$ make deps"),
+		color.CyanString("# (Optional, executed when dependencies missing) Install tools required by project."),
+	)
+
+	fmt.Println(
+		color.WhiteString("$ go get cloud.google.com/go/compute@latest"),
+		color.CyanString("# to resolve `cloud.google.com/go/compute/metadata: ambiguous import`"),
+	)
+	fmt.Println(color.WhiteString("$ go get cloud.google.com/go/compute/metadata@latest"))
+	fmt.Println(color.WhiteString("$ make protoc"), color.CyanString("# compile all protobuf files"))
+
+	fmt.Println(color.WhiteString("$ go mod tidy"), color.CyanString("# tidy dependencies"))
+	fmt.Println(color.WhiteString("$ go generate ./..."), color.CyanString("# run all go:generate directives"))
+
+	if len(o.Project.WebServers) == 1 && len(o.Project.JobServers) == 0 && len(o.Project.MQServers) == 0 && len(o.Project.CLITools) == 0 {
 		ws := o.Project.WebServers[0]
 		if o.Project.Metadata.MakefileMode != known.MakefileModeNone {
 			fmt.Println(
