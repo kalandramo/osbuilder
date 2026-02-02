@@ -1,1 +1,8 @@
-/home/colin/workspace/golang/src/github.com/onexstack/osbuilder/internal/osbuilder/tpl/project/go.mod.prod
+module {{.M.ModuleName}}
+
+require (
+    gorm.io/plugin/dbresolver v1.6.2
+    github.com/onexstack/onexstack v0.3.21
+)
+
+replace google.golang.org/grpc => google.golang.org/grpc v1.64.0 // To compatible with polarismesh/grpc-go-polaris
