@@ -33,7 +33,6 @@ import (
 	"github.com/onexstack/osbuilder/internal/osbuilder/cmd/cleanupzombies"
 	"github.com/onexstack/osbuilder/internal/osbuilder/cmd/cmd"
 	"github.com/onexstack/osbuilder/internal/osbuilder/cmd/color"
-	"github.com/onexstack/osbuilder/internal/osbuilder/cmd/completion"
 	"github.com/onexstack/osbuilder/internal/osbuilder/cmd/create"
 	"github.com/onexstack/osbuilder/internal/osbuilder/cmd/emoji"
 	"github.com/onexstack/osbuilder/internal/osbuilder/cmd/options"
@@ -218,8 +217,15 @@ func NewOSCtlCommand(o OSCtlOptions) *cobra.Command {
 			Message: "Project Commands:",
 			Commands: []*cobra.Command{
 				create.NewCmdCreate(f, o.IOStreams),
+				// quickstart.NewCmdQuickstart(f, o.IOStreams),
 				semver.NewSemverCmd(f, o.IOStreams),
 				addlicense.NewAddlicenseCmd(f, o.IOStreams),
+			},
+		},
+		{
+			Message:  "Manifest Generation Commands:",
+			Commands: []*cobra.Command{
+				// completion.NewCmdCompletion(o.IOStreams.Out, ""),
 			},
 		},
 		{
@@ -228,12 +234,6 @@ func NewOSCtlCommand(o OSCtlOptions) *cobra.Command {
 				sysload.NewSysloadCmd(f, o.IOStreams),
 				cleanupzombies.NewCleanupZombiesCmd(f, o.IOStreams),
 				// sysload.NewSysloadV2Cmd(f, o.IOStreams),
-			},
-		},
-		{
-			Message: "Settings Commands:",
-			Commands: []*cobra.Command{
-				completion.NewCmdCompletion(o.IOStreams.Out, ""),
 			},
 		},
 	}
