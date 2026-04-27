@@ -53,9 +53,9 @@ type Config struct {
     JWTKey            string
     Expiration        time.Duration
     {{- end}}
-	TLSOptions        *genericoptions.TLSOptions
+	SecureServingOptions   *genericoptions.SecureServingOptions
 	{{- if or (eq .Web.WebFramework "gin") (eq .Web.WebFramework "grpc-gateway")}}
-	HTTPOptions       *genericoptions.HTTPOptions
+	InsecureServingOptions *genericoptions.InsecureServingOptions
 	{{- end}}
 	{{- if or (eq .Web.WebFramework "grpc") (eq .Web.WebFramework "grpc-gateway")}}
 	GRPCOptions       *genericoptions.GRPCOptions

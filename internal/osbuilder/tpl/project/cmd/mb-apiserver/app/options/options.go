@@ -30,11 +30,11 @@ type ServerOptions struct {
     // Expiration 定义 JWT Token 的过期时间.
     Expiration time.Duration `json:"expiration" mapstructure:"expiration"`
     {{- end}}
-	// TLSOptions contains the TLS configuration options.
-	TLSOptions *genericoptions.TLSOptions `json:"tls" mapstructure:"tls"`
+   	// SecureServingOptions contains the TLS configuration options.
+    SecureServingOptions *genericoptions.SecureServingOptions `json:"secure" mapstructure:"secure"`
 	{{- if or (eq .Web.WebFramework "gin") (eq .Web.WebFramework "grpc-gateway")}}
-	// HTTPOptions contains the HTTP configuration options.
-	HTTPOptions *genericoptions.HTTPOptions `json:"http" mapstructure:"http"`
+   	// InsecureServingOptions contains the HTTP configuration options.
+    InsecureServingOptions *genericoptions.InsecureServingOptions `json:"insecure" mapstructure:"insecure"`
 	{{- end}}
 	{{- if or (eq .Web.WebFramework "grpc") (eq .Web.WebFramework "grpc-gateway")}}
 	// GRPCOptions contains the gRPC configuration options.
@@ -80,9 +80,9 @@ func NewServerOptions() *ServerOptions {
         JWTKey:            "",
         Expiration:        2 * time.Hour,
 		{{- end}}
-		TLSOptions:        genericoptions.NewTLSOptions(),
+		SecureServingOptions:      genericoptions.NewSecureServingOptions(),
 		{{- if or (eq .Web.WebFramework "gin") (eq .Web.WebFramework "grpc-gateway")}}
-		HTTPOptions:       genericoptions.NewHTTPOptions(),
+		InsecureServingOptions:    genericoptions.NewInsecureServingOptions(),
 		{{- end}}
 		{{- if or (eq .Web.WebFramework "grpc") (eq .Web.WebFramework "grpc-gateway")}}
 		GRPCOptions:       genericoptions.NewGRPCOptions(),
@@ -112,7 +112,7 @@ func NewServerOptions() *ServerOptions {
 		{{- end}}
 	}
 	{{- if or (eq .Web.WebFramework "gin") (eq .Web.WebFramework "grpc-gateway")}}
-	opts.HTTPOptions.Addr = ":5555"
+	opts.InsecureServingOptions.Addr = ":5555"
 	{{- end}}
 	{{- if or (eq .Web.WebFramework "grpc") (eq .Web.WebFramework "grpc-gateway")}}
 	opts.GRPCOptions.Addr = ":6666"
@@ -121,7 +121,7 @@ func NewServerOptions() *ServerOptions {
 	{{- if eq .Web.ServiceRegistry "polaris" }}
 	// If enable polaris register
 	{{- if or (eq .Web.WebFramework "gin") (eq .Web.WebFramework "grpc-gateway")}}
-	_, port, _:= net.SplitHostPort(opts.HTTPOptions.Addr)
+	_, port, _:= net.SplitHostPort(opts.InsecureServingOptions.Addr)
 	{{- end}}
 	{{- if or (eq .Web.WebFramework "grpc") (eq .Web.WebFramework "grpc-gateway")}}
 	_, port, _:= net.SplitHostPort(opts.GRPCOptions.Addr)
@@ -142,9 +142,9 @@ func (o *ServerOptions) AddFlags(fs *pflag.FlagSet) {
     fs.DurationVar(&o.Expiration, "expiration", o.Expiration, "The expiration duration of JWT tokens.")
 	{{- end}}
 	// Add command-line flags for sub-options.
-	o.TLSOptions.AddFlags(fs, "tls")
+	o.SecureServingOptions.AddFlags(fs, "secure")
 	{{- if or (eq .Web.WebFramework "gin") (eq .Web.WebFramework "grpc-gateway")}}
-	o.HTTPOptions.AddFlags(fs, "http")
+    o.InsecureServingOptions.AddFlags(fs, "insecure")
 	{{- end}}
 	{{- if or (eq .Web.WebFramework "grpc") (eq .Web.WebFramework "grpc-gateway")}}
 	o.GRPCOptions.AddFlags(fs, "grpc")
@@ -192,9 +192,9 @@ func (o *ServerOptions) Validate() error {
 	{{- end}}
 
 	// Validate sub-options.
-	errs = append(errs, o.TLSOptions.Validate()...)
+	errs = append(errs, o.SecureServingOptions.Validate()...)
 	{{- if or (eq .Web.WebFramework "gin") (eq .Web.WebFramework "grpc-gateway")}}
-	errs = append(errs, o.HTTPOptions.Validate()...)
+	errs = append(errs, o.InsecureServingOptions.Validate()...)
 	{{- end}}
 	{{- if or (eq .Web.WebFramework "grpc") (eq .Web.WebFramework "grpc-gateway")}}
 	errs = append(errs, o.GRPCOptions.Validate()...)
@@ -238,9 +238,9 @@ func (o *ServerOptions) Config() (*{{.Web.Name}}.Config, error) {
         JWTKey:            o.JWTKey,
         Expiration:        o.Expiration,
 	    {{- end}}
-		TLSOptions:        o.TLSOptions,
+	    SecureServingOptions:   o.SecureServingOptions,
 		{{- if or (eq .Web.WebFramework "gin") (eq .Web.WebFramework "grpc-gateway")}}
-		HTTPOptions:       o.HTTPOptions,
+        InsecureServingOptions: o.InsecureServingOptions,
 		{{- end}}
 		{{- if or (eq .Web.WebFramework "grpc") (eq .Web.WebFramework "grpc-gateway")}}
 		GRPCOptions:       o.GRPCOptions,
