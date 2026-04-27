@@ -188,14 +188,14 @@ func (h *Handler) readPump(client *WSClient) {
 	for {
 		_, messageBytes, err := client.conn.ReadMessage() // Read raw bytes
 		if err != nil {
-			slog.Error("Failed to read message from connection", "error", err)
+			slog.Error("failed to read message from connection", "error", err)
 			// h.sendError(client, msg.ID, errno.ErrPayloadInvalid)
 			break
 		}
 
 		var msg v1.WSMessage
 		if err := protojson.Unmarshal(messageBytes, &msg); err != nil {
-			slog.Error("Failed to unmarshal protobuf message from JSON", "error", err, "rawMessage", string(messageBytes))
+			slog.Error("failed to unmarshal protobuf message from JSON", "error", err, "raw_message", string(messageBytes))
 			// h.sendError(client, msg.ID, errno.ErrPayloadInvalid)
 			break
 		}
@@ -325,7 +325,7 @@ func (h *Handler) handleCount(client *WSClient, msg *v1.WSMessage) {
 func (h *Handler) sendMessage(client *WSClient, msg *v1.WSMessage) {
 	messageBytes, err := protojson.Marshal(msg)
 	if err != nil {
-		client.logger.Error("Failed to marshal protobuf message to JSON", "error", err)
+		client.logger.Error("failed to marshal protobuf message to JSON", "error", err)
 		return
 	}
 
@@ -362,7 +362,8 @@ func generateUserID() string {
 }
 
 func init() {
-	Register(func(v1 *gin.RouterGroup, handler *Handler, mws ...gin.HandlerFunc) {
+	Register(func(engine *gin.RouterGroup, handler *Handler, mws ...gin.HandlerFunc) {
+		v1 := engine.Group("/v1")
 		v1.GET("/ws", gin.WrapH(http.HandlerFunc(handler.ServeWebSocket)))
 	})
 }

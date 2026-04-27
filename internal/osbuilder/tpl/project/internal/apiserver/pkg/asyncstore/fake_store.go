@@ -2,6 +2,7 @@
 package asyncstore
 
 import (
+	"sync"
 	"context"
 	"log/slog"
 	"sync/atomic" // Used for atomic operations on the map
@@ -15,6 +16,7 @@ import (
 // It uses atomic.Value to ensure concurrent-safe and consistent access
 // during data synchronization.
 type FakeStore struct {
+	mu sync.RWMutex
 	data atomic.Value // Stores map[string]*{{.M.APIAlias}}.FakeData
 	// A mutex might still be needed for other operations not covered by atomic.Value,
 	// or for protecting other fields of FakeStore.

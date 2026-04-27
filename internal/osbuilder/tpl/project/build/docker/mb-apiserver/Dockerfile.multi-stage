@@ -2,6 +2,12 @@
 # syntax=docker/dockerfile:1.7
 
 # =============================================================================
+# 0) Global Arguments (Must precede the first FROM instruction)
+# =============================================================================
+ARG ENV=prod
+ARG BUILDER_IMAGE=golang:1.25.0
+
+# =============================================================================
 # 1) Base Images Preparation (Pre-defined base environments)
 # =============================================================================
 # Define arguments for use in subsequent stages
@@ -38,10 +44,7 @@ FROM base-distroless-prep AS final-base
 # [Mode: never] Force use of debian, ignore ENV
 FROM base-debian-prep AS final-base
 {{- else }}
-# [Mode: auto] Dynamic selection based on build argument ENV
-# Default is prod
-ARG ENV=prod
-
+# [Mode: auto] Dynamic selection based on build argument ENV (Default is prod)
 # Define Routing Table
 FROM base-distroless-prep AS mode-auto-prod
 FROM base-debian-prep     AS mode-auto-test
@@ -52,9 +55,8 @@ FROM mode-auto-${ENV} AS final-base
 {{- end }}
 
 # =============================================================================
-# 3) Builder Stage (Build stage, remains unchanged)
+# 3) Builder Stage (Build stage)
 # =============================================================================
-ARG BUILDER_IMAGE=golang:1.25.0
 FROM ${BUILDER_IMAGE} AS builder
 
 ARG OS
@@ -63,15 +65,6 @@ ARG UID
 ARG GID
 
 WORKDIR /workspace
-
-# Install dependencies for build (tini download)
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
-
-# Download tini (Static binary)
-RUN curl -fsSL -o /usr/bin/tini https://github.com/krallin/tini/releases/download/v0.19.0/tini-static-amd64 \
- && chmod +x /usr/bin/tini
 
 # Go Modules Caching
 COPY go.mod go.sum ./
@@ -99,12 +92,10 @@ ARG GID
 WORKDIR /app
 
 # Copy artifacts
-# Note: Both Tini and the binary are copied from the builder
-# No need to run apt-get or useradd, as it was already done in final-base (base-debian-prep)
-COPY --from=builder --chown=0:0 /usr/bin/tini /usr/bin/tini
 COPY --from=builder --chown=${UID}:${GID} /workspace/_output/platforms/linux/amd64/{{$D.BinaryName}} /app/{{$D.BinaryName}}
 
 # Security: run as non-root (UID is 65532 for both distroless and debian)
 USER ${UID}:${GID}
 
-ENTRYPOINT ["/usr/bin/tini", "--", "/app/{{$D.BinaryName}}"]
+# Modified ENTRYPOINT to run the binary directly
+ENTRYPOINT ["/app/{{$D.BinaryName}}"]

@@ -67,7 +67,8 @@ func (h *Handler) List{{.Web.R.SingularName}}(c *gin.Context) {
 }
 
 func init() {
-	Register(func(v1 *gin.RouterGroup, handler *Handler, mws ...gin.HandlerFunc) {
+	Register(func(engine *gin.RouterGroup, handler *Handler, mws ...gin.HandlerFunc) {
+		v1 := engine.Group("/v1")
 		{{- if ne .Web.R.ResourcePathPrefix "" }}
 		rg := v1.Group("/{{.Web.R.ResourcePathPrefix}}/{{.Web.R.PluralLower}}", mws...)
 		{{- else}}

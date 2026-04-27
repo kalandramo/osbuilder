@@ -11,15 +11,15 @@ import (
 	"github.com/tmc/langchaingo/embeddings"
 	"github.com/tmc/langchaingo/llms/ollama"
 
+	"{{.M.ModuleName}}/internal/pkg/contextx"
+	fakeembedder "{{.M.ModuleName}}/internal/pkg/embedding/embedder/fake"
+	known "{{.M.ModuleName}}/internal/pkg/known/job"
 	"{{.M.ModuleName}}/internal/{{.Job.Name}}/model"
 	"{{.M.ModuleName}}/internal/{{.Job.Name}}/pkg/clientset/typed/minio"
 	"{{.M.ModuleName}}/internal/{{.Job.Name}}/pkg/clientset/typed/train"
 	"{{.M.ModuleName}}/internal/{{.Job.Name}}/pkg/metrics"
 	"{{.M.ModuleName}}/internal/{{.Job.Name}}/store"
 	"{{.M.ModuleName}}/internal/{{.Job.Name}}/watcher"
-	"{{.M.ModuleName}}/internal/pkg/contextx"
-	fakeembedder "{{.M.ModuleName}}/internal/pkg/embedding/embedder/fake"
-	known "{{.M.ModuleName}}/internal/pkg/known/job"
 )
 
 // runnablePhases defines the list of job statuses that the watcher is interested in processing.
@@ -58,7 +58,7 @@ func (w *Watcher) Run() {
 		"suspend", known.JobNonSuspended,
 	))
 	if err != nil {
-		slog.Error("Failed to get runnable jobs", "error", err)
+		slog.Error("failed to get runnable jobs", "error", err)
 		return
 	}
 
@@ -101,7 +101,7 @@ func (w *Watcher) processJob(ctx context.Context, jobM *model.JobM) (err error) 
 
 	sm := NewStateMachine(jobM.Status, w, jobM)
 	if err := sm.FSM.Event(ctx, jobM.Status); err != nil {
-		logger.ErrorContext(ctx, "Failed to process llm train job", "error", err)
+		logger.ErrorContext(ctx, "failed to process llm train job", "error", err)
 		return err
 	}
 

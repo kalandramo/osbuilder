@@ -2,23 +2,18 @@
 # syntax=docker/dockerfile:1.7
 
 # =============================================================================
+# 0) Global Arguments (Must precede the first FROM instruction)
+# =============================================================================
+ARG ENV=prod
+
+# =============================================================================
 # 1) Base Images Preparation (Pre-defined base environments)
 # =============================================================================
-ARG BUILDER_IMAGE=debian:bookworm
 ARG UID=65532
 ARG GID=65532
 ARG USER=noroot
 
-# --- A. Tini Builder (Download tools) ---
-FROM ${BUILDER_IMAGE} AS builder
-WORKDIR /workspace
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
-RUN curl -fsSL -o /usr/bin/tini https://github.com/krallin/tini/releases/download/v0.19.0/tini-static-amd64 \
- && chmod +x /usr/bin/tini
-
-# --- B. Debian Base Prep (Includes tool installation and user creation) ---
+# --- A. Debian Base Prep (Includes tool installation and user creation) ---
 FROM debian:bookworm AS base-debian-prep
 ARG UID
 ARG GID
@@ -31,7 +26,7 @@ RUN apt-get update \
 RUN groupadd -g ${GID} ${USER} 2>/dev/null || true \
  && useradd -u ${UID} -g ${USER} ${USER} 2>/dev/null || true
 
-# --- C. Distroless Base Prep (Direct reference) ---
+# --- B. Distroless Base Prep (Direct reference) ---
 FROM gcr.io/distroless/base-debian12:nonroot AS base-distroless-prep
 
 # =============================================================================
@@ -48,8 +43,6 @@ FROM base-distroless-prep AS final-base
 FROM base-debian-prep AS final-base
 {{- else }}
 # [Mode: auto] Dynamic selection based on build argument ENV (Default is prod)
-ARG ENV=prod
-
 # Define Routing Table
 FROM base-distroless-prep AS mode-auto-prod
 FROM base-debian-prep     AS mode-auto-test
@@ -71,9 +64,6 @@ ARG GID
 
 WORKDIR /app
 
-# Copy tini from builder (always needed)
-COPY --from=builder --chown=0:0 /usr/bin/tini /usr/bin/tini
-
 # Copy artifact (Copy from external build output directory)
 # Note: Assumes the external path structure is _output/platforms/${OS}/${ARCH}/...
 COPY --chown=${UID}:${GID} _output/platforms/${OS}/${ARCH}/{{$D.BinaryName}} /app/{{$D.BinaryName}}
@@ -81,4 +71,4 @@ COPY --chown=${UID}:${GID} _output/platforms/${OS}/${ARCH}/{{$D.BinaryName}} /ap
 # Security: run as non-root (UID is 65532 for both distroless and debian)
 USER ${UID}:${GID}
 
-ENTRYPOINT ["/usr/bin/tini", "--", "/app/{{$D.BinaryName}}"]
+ENTRYPOINT ["/app/{{$D.BinaryName}}"]

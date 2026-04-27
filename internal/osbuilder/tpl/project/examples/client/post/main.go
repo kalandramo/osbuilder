@@ -28,7 +28,7 @@ func main() {
 	// 创建客户端连接
 	conn, err := newConnection(serverAddress)
 	if err != nil {
-		log.Fatalf("Failed to connect: %v", err)
+		log.Fatalf("failed to connect: %v", err)
 	}
 	defer conn.Close()
 
@@ -107,7 +107,7 @@ func create{{.Web.R.SingularName}}(ctx context.Context, cli {{.M.APIAlias}}.{{.W
 	}
 
 	resp, err := cli.Create{{.Web.R.SingularName}}(ctx, req)
-	checkError(err, "Failed to create {{.Web.R.SingularLower}}")
+	checkError(err, "failed to create {{.Web.R.SingularLower}}")
 
 	log.Printf("{{.Web.R.SingularName}} created successfully with ID: %s\n", resp.Get{{.Web.R.SingularName}}ID())
 	return resp.Get{{.Web.R.SingularName}}ID()
@@ -123,7 +123,7 @@ func list{{.Web.R.SingularName}}(ctx context.Context, cli {{.M.APIAlias}}.{{.Web
 	}
 
 	resp, err := cli.List{{.Web.R.SingularName}}(ctx, req)
-	checkError(err, "Failed to list {{.Web.R.PluralLower}}")
+	checkError(err, "failed to list {{.Web.R.PluralLower}}")
 
 	log.Printf("Found %d {{.Web.R.PluralLower}} in total.", resp.GetTotal())
 	for _, {{.Web.R.SingularLower}} := range resp.Get{{.Web.R.SingularName}}s() {
@@ -141,7 +141,7 @@ func delete{{.Web.R.SingularName}}(ctx context.Context, cli {{.M.APIAlias}}.{{.W
 	}
 
 	_, err := cli.Delete{{.Web.R.SingularName}}(ctx, req)
-	checkError(err, fmt.Sprintf("Failed to delete {{.Web.R.SingularLower}} with ID: %s",  {{.Web.R.SingularLowerFirst}}ID))
+	checkError(err, fmt.Sprintf("failed to delete {{.Web.R.SingularLower}} with ID: %s",  {{.Web.R.SingularLowerFirst}}ID))
 
 	log.Printf("{{.Web.R.SingularName}} with ID: %s deleted successfully.",  {{.Web.R.SingularLowerFirst}}ID)
 }

@@ -97,7 +97,7 @@ func (w *History) retainRecords(ctx context.Context, cronJobID, status string, m
 	// Fetch jobs ordered by creation time (newest first).
 	_, jobs, err := w.store.Job().List(ctx, whr)
 	if err != nil {
-		contextx.L(ctx).ErrorContext(ctx, "Failed to list jobs for cronJobID", "error", err, "status", status)
+		contextx.L(ctx).ErrorContext(ctx, "failed to list jobs for cronJobID", "error", err, "status", status)
 		return 0, err
 	}
 
@@ -109,7 +109,7 @@ func (w *History) retainRecords(ctx context.Context, cronJobID, status string, m
 
 	// Delete the excess records.
 	if err := w.store.Job().Delete(ctx, where.F("job_id", recordsToRemove)); err != nil {
-		contextx.L(ctx).ErrorContext(ctx, "Failed to delete jobs", "error", err, "status", status)
+		contextx.L(ctx).ErrorContext(ctx, "failed to delete jobs", "error", err, "status", status)
 	}
 
 	contextx.L(ctx).DebugContext(ctx, "Retained job records",

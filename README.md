@@ -59,7 +59,7 @@ osbuilder 具有以下功能特点：
 ### 安装
 
 ```bash
-go install github.com/onexstack/osbuilder/cmd/osbuilder@latest
+$ go install github.com/onexstack/osbuilder/cmd/osbuilder@latest
 $ osbuilder version
 ```
 

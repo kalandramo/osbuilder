@@ -42,36 +42,36 @@ type Watcher struct {
 func (w *Watcher) Run() {
 	ctx := context.Background()
 
-	slog.Info("Starting cron job state synchronization")
+	slog.Info("starting cron job state synchronization")
 
 	// Query active cron jobs that are not suspended
 	_, cronjobs, err := w.store.CronJob().List(ctx, where.F("suspend", 0))
 	if err != nil {
-		slog.Error("Failed to list cron jobs", "error", err)
+		slog.Error("failed to list cron jobs", "error", err)
 		return
 	}
 
-	slog.Info("Retrieved cron jobs for state sync", "count", len(cronjobs))
+	slog.Info("retrieved cron jobs for state sync", "count", len(cronjobs))
 
 	wp := workerpool.New(w.PerConcurrency)
 
 	// Process each cron job in a separate worker
 	for _, cronJob := range cronjobs {
-		ctx := contextx.WithLogger(context.Background(), slog.With("cronJobID", cronJob.CronJobID))
+		ctx := contextx.WithLogger(context.Background(), slog.With("cronjob_id", cronJob.CronJobID))
 		wp.Submit(func() { _ = w.processJob(ctx, cronJob) })
 	}
 
 	// Wait for all workers to complete their tasks
 	wp.StopWait()
 
-	slog.Info("Cron job state synchronization completed")
+	slog.Info("cron job state synchronization completed")
 }
 
 // processJob processes a single job with error handling and rate limiting.
 func (w *Watcher) processJob(ctx context.Context, cronJob *model.CronJobM) (err error) {
 	w.Limiter.Take()
 
-	contextx.L(ctx).DebugContext(ctx, "Processing cron job state sync")
+	contextx.L(ctx).DebugContext(ctx, "processing cron job state sync")
 	metrics.M.RecordCronJobExecution(ctx, cronJob.CronJobID)
 	defer func() {
 		if err != nil {
@@ -82,15 +82,15 @@ func (w *Watcher) processJob(ctx context.Context, cronJob *model.CronJobM) (err 
 	// Fetch all jobs associated with this cron job
 	_, jobs, err := w.store.Job().List(ctx, where.F("cronjob_id", cronJob.CronJobID))
 	if err != nil {
-		contextx.L(ctx).ErrorContext(ctx, "Failed to list jobs for cron job", "error", err)
+		contextx.L(ctx).ErrorContext(ctx, "failed to list jobs for cron job", "error", err)
 		return err
 	}
 	if len(jobs) == 0 {
-		contextx.L(ctx).DebugContext(ctx, "No jobs found for cron job")
+		contextx.L(ctx).DebugContext(ctx, "no jobs found for cron job")
 		return nil
 	}
 
-	contextx.L(ctx).DebugContext(ctx, "Retrieved jobs for cron job", "jobCount", len(jobs))
+	contextx.L(ctx).DebugContext(ctx, "retrieved jobs for cron job", "jobCount", len(jobs))
 
 	// Initialize collections for tracking job states
 	active := make([]string, 0)
@@ -122,13 +122,13 @@ func (w *Watcher) processJob(ctx context.Context, cronJob *model.CronJobM) (err 
 	// Set the last successful execution time if available
 	if lastSuccessJob != nil {
 		cronJob.Status.LastSuccessfulTime = lastSuccessJob.EndedAt.Unix()
-		contextx.L(ctx).DebugContext(ctx, "Updated last successful time", "time", lastSuccessJob.EndedAt)
+		contextx.L(ctx).DebugContext(ctx, "updated last successful time", "time", lastSuccessJob.EndedAt)
 	}
 
 	// Set the last schedule time if available
 	if lastScheduleJob != nil {
 		cronJob.Status.LastScheduleTime = lastScheduleJob.StartedAt.Unix()
-		contextx.L(ctx).DebugContext(ctx, "Updated last schedule time", "schedule_time", lastScheduleJob.StartedAt.Format("2006-01-02 15:04:05"))
+		contextx.L(ctx).DebugContext(ctx, "updated last schedule time", "schedule_time", lastScheduleJob.StartedAt.Format("2006-01-02 15:04:05"))
 	}
 
 	// Update the cron job status in the database

@@ -65,14 +65,14 @@ func (b *userBiz) Login(ctx context.Context, rq *{{.M.APIAlias}}.LoginRequest) (
 
 	// 对比传入的明文密码和数据库中已加密过的密码是否匹配
 	if err := authn.Compare(userM.Password, rq.GetPassword()); err != nil {
-		slog.ErrorContext(ctx, "Failed to compare password", "error", err)
+		slog.ErrorContext(ctx, "failed to compare password", "error", err)
 		return nil, errno.ErrPasswordInvalid
 	}
 
 	// 如果匹配成功，说明登录成功，签发 token 并返回
 	tokenStr, expireAt, err := token.Sign(userM.UserID)
 	if err != nil {
-		slog.ErrorContext(ctx, "Failed to sign token", "error", err)
+		slog.ErrorContext(ctx, "failed to sign token", "error", err)
 		return nil, errno.ErrSignToken
 	}
 
@@ -84,7 +84,7 @@ func (b *userBiz) Login(ctx context.Context, rq *{{.M.APIAlias}}.LoginRequest) (
 func (b *userBiz) RefreshToken(ctx context.Context, rq *{{.M.APIAlias}}.RefreshTokenRequest) (*{{.M.APIAlias}}.RefreshTokenResponse, error) {
 	tokenStr, expireAt, err := token.Sign(contextx.UserID(ctx))
 	if err != nil {
-		slog.ErrorContext(ctx, "Failed to sign token", "error", err)
+		slog.ErrorContext(ctx, "failed to sign token", "error", err)
 		return nil, errno.ErrSignToken
 	}
 
@@ -99,7 +99,7 @@ func (b *userBiz) ChangePassword(ctx context.Context, rq *{{.M.APIAlias}}.Change
 	}
 
 	if err := authn.Compare(userM.Password, rq.GetOldPassword()); err != nil {
-		slog.ErrorContext(ctx, "Failed to compare password", "error", err)
+		slog.ErrorContext(ctx, "failed to compare password", "error", err)
 		return nil, errno.ErrPasswordInvalid
 	}
 
@@ -121,7 +121,7 @@ func (b *userBiz) Create(ctx context.Context, rq *{{.M.APIAlias}}.CreateUserRequ
 	}
 
 	if _, err := b.authz.AddGroupingPolicy(userM.UserID, known.RoleUser); err != nil {
-		slog.ErrorContext(ctx, "Failed to add grouping policy for user", "user", userM.UserID, "role", known.RoleUser, "error", err)
+		slog.ErrorContext(ctx, "failed to add grouping policy for user", "user", userM.UserID, "role", known.RoleUser, "error", err)
 		return nil, errno.ErrAddRole.WithMessage("%s", err.Error())
 	}
 
@@ -164,7 +164,7 @@ func (b *userBiz) Delete(ctx context.Context, rq *{{.M.APIAlias}}.DeleteUserRequ
 	}
 
 	if _, err := b.authz.RemoveGroupingPolicy(rq.GetUserID(), known.RoleUser); err != nil {
-		slog.ErrorContext(ctx, "Failed to remove grouping policy for user", "user", rq.GetUserID(), "role", known.RoleUser, "error", err)
+		slog.ErrorContext(ctx, "failed to remove grouping policy for user", "user", rq.GetUserID(), "role", known.RoleUser, "error", err)
 		return nil, errno.ErrRemoveRole.WithMessage("%s", err.Error())
 	}
 
@@ -224,7 +224,7 @@ func (b *userBiz) List(ctx context.Context, rq *{{.M.APIAlias}}.ListUserRequest)
 	}
 
 	if err := eg.Wait(); err != nil {
-		slog.ErrorContext(ctx, "Failed to wait all function calls returned", "error", err)
+		slog.ErrorContext(ctx, "failed to wait all function calls returned", "error", err)
 		return nil, err
 	}
 
@@ -234,7 +234,7 @@ func (b *userBiz) List(ctx context.Context, rq *{{.M.APIAlias}}.ListUserRequest)
 		users = append(users, user.(*{{.M.APIAlias}}.User))
 	}
 
-	slog.InfoContext(ctx, "Get users from backend storage", "count", len(users))
+	slog.InfoContext(ctx, "get users from backend storage", "count", len(users))
 
 	return &{{.M.APIAlias}}.ListUserResponse{TotalCount: count, Users: users}, nil
 }
@@ -265,7 +265,7 @@ func (b *userBiz) ListWithBadPerformance(ctx context.Context, rq *{{.M.APIAlias}
 		users = append(users, userv1)
 	}
 
-	slog.InfoContext(ctx, "Get users from backend storage", "count", len(users))
+	slog.InfoContext(ctx, "get users from backend storage", "count", len(users))
 
 	return &{{.M.APIAlias}}.ListUserResponse{TotalCount: count, Users: users}, nil
 }

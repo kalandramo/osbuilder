@@ -30,7 +30,7 @@ func main() {
 	// 建立与 gRPC 服务器的连接
 	conn, err := grpc.NewClient(*addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatalf("Failed to connect to grpc server: %v", err)
+		log.Fatalf("failed to connect to grpc server: %v", err)
 	}
 	defer conn.Close() // 确保连接在函数结束时关闭
 
@@ -45,7 +45,7 @@ func main() {
 	createUserRequest := helper.ExampleCreateUserRequest()
 	createUserResponse, err := client.CreateUser(ctx, createUserRequest)
 	if err != nil {
-		log.Fatalf("Failed to create user: %v, username: %s", err, createUserRequest.Username)
+		log.Fatalf("failed to create user: %v, username: %s", err, createUserRequest.Username)
 	}
 	log.Printf("[CreateUser     ] Success to create user, userID: %s", createUserResponse.UserID)
 
@@ -54,10 +54,10 @@ func main() {
 		Password: createUserRequest.Password,
 	})
 	if err != nil {
-		log.Fatalf("Failed to login: %v", err)
+		log.Fatalf("failed to login: %v", err)
 	}
 	if loginResponse.Token == "" {
-		log.Printf("Failed to validate token string: received an empty toke")
+		log.Printf("failed to validate token string: received an empty toke")
 		return
 	}
 	log.Printf("[Login          ] Success to login")
@@ -73,7 +73,7 @@ func main() {
 
 	refreshTokenResponse, err := client.RefreshToken(ctx, &{{.M.APIAlias}}.RefreshTokenRequest{})
 	if err != nil {
-		log.Printf("Failed to refresh token: %v", err)
+		log.Printf("failed to refresh token: %v", err)
 		return
 	}
 	if refreshTokenResponse.Token == "" {
@@ -88,7 +88,7 @@ func main() {
 		Nickname: ptr.To("令飞孔"),
 	})
 	if err != nil {
-		log.Printf("Failed to update user: %v", err)
+		log.Printf("failed to update user: %v", err)
 		return
 	}
 	log.Printf("[UpdateUser     ] Success to update user: %v", createUserResponse.UserID)
@@ -101,7 +101,7 @@ func main() {
 		NewPassword: newPassword,
 	})
 	if err != nil {
-		log.Printf("Failed to change password: %v", err)
+		log.Printf("failed to change password: %v", err)
 		return
 	}
 	log.Printf("[ChangePassword ] Success to change password")
@@ -111,7 +111,7 @@ func main() {
 		Password: newPassword,
 	})
 	if err != nil {
-		log.Printf("Failed to login with new password: %v", err)
+		log.Printf("failed to login with new password: %v", err)
 		return
 	}
 	log.Printf("[Login          ] Success to login with new password")
@@ -122,25 +122,25 @@ func main() {
 
 	getUserResponse, err := client.GetUser(ctx, &{{.M.APIAlias}}.GetUserRequest{UserID: createUserResponse.UserID})
 	if err != nil {
-		log.Printf("Failed to get user: %v", err)
+		log.Printf("failed to get user: %v", err)
 		return
 	}
 	if getUserResponse.User.UserID != createUserResponse.UserID || getUserResponse.User.Username != createUserRequest.Username {
-		log.Printf("Failed to get user: Username or UserID does not match")
+		log.Printf("failed to get user: Username or UserID does not match")
 		return
 	}
 	log.Printf("[GetUser        ] Success to get user: %v", createUserResponse.UserID)
 
 	_, err = client.ListUser(ctx, &{{.M.APIAlias}}.ListUserRequest{Offset: 0, Limit: *limit})
 	if err != nil {
-	    log.Printf("Failed to list user: %v", err)
+	    log.Printf("failed to list user: %v", err)
 	}
     log.Printf("[ListUser       ] Success to list users")
 
 	// 请求 DeleteUser 接口
 	_, err = client.DeleteUser(ctx, &{{.M.APIAlias}}.DeleteUserRequest{UserID: createUserResponse.UserID})
 	if err != nil {
-		log.Printf("Failed to delete user: %v", err)
+		log.Printf("failed to delete user: %v", err)
 		return
 	}
 	log.Printf("[DeleteUser     ] Success to delete user: %v", createUserResponse.UserID)

@@ -42,7 +42,7 @@ otel:
     output: stdout # 支持 stdout, stderr, or file path
 {{- end}}
 {{- if or (eq .Job.StorageType "mysql") (eq .Job.StorageType "mariadb") }}
-mysql:
+coredb:
   addr: 127.0.0.1:3306
   username: onex
   password: "onex(#)666"

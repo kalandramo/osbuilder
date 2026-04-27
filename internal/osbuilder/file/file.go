@@ -4,16 +4,17 @@ package file
 import (
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
+
+	iofs "io/fs"
 
 	"github.com/fatih/color"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/afero"
-	iofs "io/fs"
-	"net/http"
-	"strings"
 )
 
 // FileOperation 表示文件操作类型
@@ -27,7 +28,7 @@ const (
 // FileInfo 存储文件信息和操作类型
 type FileInfo struct {
 	Path string
-	//Operation FileOperation
+	// Operation FileOperation
 }
 
 // FileManager 文件管理器
@@ -50,6 +51,10 @@ func NewFileManager(workDir string, force bool) *FileManager {
 	}
 }
 
+func (fm *FileManager) WorkDir() string {
+	return fm.workDir
+}
+
 // CreateOrUpdateFile 创建或更新文件
 func (fm *FileManager) WriteFile(path string, content []byte) error {
 	fm.mu.Lock()
@@ -61,7 +66,7 @@ func (fm *FileManager) WriteFile(path string, content []byte) error {
 
 	// 确保目录存在
 	dir := filepath.Dir(path)
-	if err := fm.FS.MkdirAll(dir, 0755); err != nil {
+	if err := fm.FS.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("创建目录失败: %v", err)
 	}
 
@@ -75,7 +80,7 @@ func (fm *FileManager) WriteFile(path string, content []byte) error {
 	*/
 
 	// 写入文件
-	err = afero.WriteFile(fm.FS, path, content, 0644)
+	err = afero.WriteFile(fm.FS, path, content, 0o644)
 	if err != nil {
 		return fmt.Errorf("写入文件失败: %v", err)
 	}
@@ -104,8 +109,8 @@ func (fm *FileManager) PrintAll() {
 */
 
 func (fm *FileManager) Print(operation FileOperation, path string) {
-	//info, _ := os.Stat(path)
-	//fmt.Printf("%s %s (%v bytes)\n", color.GreenString("CREATED"), strings.Replace(path, filepath.Dir(fm.workDir)+"/", "", -1), info.Size())
+	// info, _ := os.Stat(path)
+	// fmt.Printf("%s %s (%v bytes)\n", color.GreenString("CREATED"), strings.Replace(path, filepath.Dir(fm.workDir)+"/", "", -1), info.Size())
 	fmt.Printf("%s %s\n", color.GreenString(string(operation)), strings.Replace(path, filepath.Dir(fm.workDir)+"/", "", -1))
 }
 
@@ -137,7 +142,7 @@ func (fm *FileManager) CopyFiles(src, dst string) error {
 	}
 
 	// 创建目标根目录
-	if err := fm.FS.MkdirAll(dst, 0755); err != nil {
+	if err := fm.FS.MkdirAll(dst, 0o755); err != nil {
 		return fmt.Errorf("failed to create destination directory: %v", err)
 	}
 

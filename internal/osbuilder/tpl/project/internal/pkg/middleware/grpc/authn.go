@@ -25,11 +25,11 @@ func AuthnInterceptor(retriever UserRetriever) grpc.UnaryServerInterceptor {
 		// 解析 JWT Token
 		userID, err := token.ParseRequest(ctx)
 		if err != nil {
-			slog.Error("Failed to parse request", "error", err)
+			slog.Error("failed to parse request", "error", err)
 			return nil, errno.ErrTokenInvalid.WithMessage("%s", err.Error())
 		}
 
-		slog.Info("Token parsing successful", "userID", userID)
+		slog.Info("token parsing successful", "user_id", userID)
 
 		user, err := retriever.GetUser(ctx, userID)
 		if err != nil {

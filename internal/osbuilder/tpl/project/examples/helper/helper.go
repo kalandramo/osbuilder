@@ -56,7 +56,7 @@ func MustWithAdminToken(ctx context.Context, client {{.M.APIAlias}}.{{.Web.GRPCS
 		Password: "miniblog1234", // 固定的管理员密码
 	})
 	if err != nil {
-		log.Printf("Failed to login with root account: %v", err) // 打印登录失败的错误信息
+		log.Printf("failed to login with root account: %v", err) // 打印登录失败的错误信息
 		panic(err)                                               // 如果登录失败，直接终止程序
 	}
 	log.Printf("[Login          ] Success to login with root account") // 登录成功日志

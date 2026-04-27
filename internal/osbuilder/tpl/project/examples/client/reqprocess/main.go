@@ -34,7 +34,7 @@ func main() {
 	// 建立与 gRPC 服务器的连接
 	conn, err := grpc.NewClient(*addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatalf("Failed to connect to grpc server: %v", err)
+		log.Fatalf("failed to connect to grpc server: %v", err)
 	}
 	defer conn.Close() // 确保连接在函数结束时关闭
 
@@ -50,7 +50,7 @@ func main() {
 	createUserRequest.Nickname = nil // 不设置 Nickname 字段
 	createUserResponse, err := client.CreateUser(ctx, createUserRequest)
 	if err != nil {
-		log.Fatalf("Failed to create user: %v, 1111: %s", err, createUserRequest.Username)
+		log.Fatalf("failed to create user: %v, 1111: %s", err, createUserRequest.Username)
 	}
 	log.Printf("[CreateUser     ] Success to create user, userID: %s", createUserResponse.UserID)
 
@@ -59,10 +59,10 @@ func main() {
 		Password: createUserRequest.Password,
 	})
 	if err != nil {
-		log.Fatalf("Failed to login: %v", err)
+		log.Fatalf("failed to login: %v", err)
 	}
 	if loginResponse.Token == "" {
-		log.Printf("Failed to validate token string: received an empty toke")
+		log.Printf("failed to validate token string: received an empty toke")
 		return
 	}
 	log.Printf("[Login          ] Success to login")
@@ -78,11 +78,11 @@ func main() {
 
 	getUserResponse, err := client.GetUser(ctx, &apiv1.GetUserRequest{UserID: createUserResponse.UserID})
 	if err != nil {
-		log.Printf("Failed to get user: %v", err)
+		log.Printf("failed to get user: %v", err)
 		return
 	}
 	if getUserResponse.User.Nickname != "你好世界" {
-		log.Printf("[GetUser        ] Failed to setting request parameter default value")
+		log.Printf("[GetUser        ] failed to setting request parameter default value")
 		return
 	}
 	log.Printf("[GetUser        ] Success in testing request parameter default value setting")
@@ -91,7 +91,7 @@ func main() {
 	createUserRequest2.Email = "bad email address" // 不设置 Nickname 字段
 	_, err = client.CreateUser(ctx, createUserRequest2)
 	if !strings.Contains(err.Error(), "invalid email format") {
-		log.Printf("[GetUser        ] Failed to validation request parameter")
+		log.Printf("[GetUser        ] failed to validation request parameter")
 		return
 	}
 	log.Printf("[GetUser        ] Success in testing request parameter validation")

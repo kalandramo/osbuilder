@@ -58,7 +58,7 @@ func NewClient(serverURL, userID string, pingInterval time.Duration) *client {
 func (c *client) Connect() error {
 	u, err := url.Parse(c.serverURL)
 	if err != nil {
-		c.logger.Error("Failed to parse server URL", "url", c.serverURL, "error", err)
+		c.logger.Error("failed to parse server URL", "url", c.serverURL, "error", err)
 		return fmt.Errorf("invalid URL: %w", err)
 	}
 
@@ -69,16 +69,16 @@ func (c *client) Connect() error {
 		u.RawQuery = q.Encode()
 	}
 
-	c.logger.Info("Attempting to connect to WebSocket server", "targetURL", u.String())
+	c.logger.Info("attempting to connect to WebSocket server", "targetURL", u.String())
 
 	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
-		c.logger.Error("WebSocket dial failed", "error", err)
+		c.logger.Error("webSocket dial failed", "error", err)
 		return fmt.Errorf("dial failed: %w", err)
 	}
 
 	c.conn = conn
-	c.logger.Info("Connected successfully to WebSocket server")
+	c.logger.Info("connected successfully to WebSocket server")
 	return nil
 }
 
@@ -95,13 +95,13 @@ func (c *client) Start() {
 
 	// Wait for all client goroutines to finish. This call will block.
 	c.wg.Wait()
-	c.logger.Info("Client operations stopped")
+	c.logger.Info("client operations stopped")
 }
 
 // Stop gracefully closes the client connection and signals all its goroutines to terminate.
 // It attempts to send a close message to the server before closing the underlying connection.
 func (c *client) Stop() {
-	c.logger.Info("Stopping client operations")
+	c.logger.Info("stopping client operations")
 	close(c.done) // Signal goroutines to stop.
 
 	if c.conn != nil {
@@ -111,7 +111,7 @@ func (c *client) Stop() {
 		c.writeMutex.Unlock() // Release lock
 		if err != nil {
 			// Log error but proceed to close, as it might be a broken pipe already.
-			c.logger.Error("Failed to send close message to WebSocket server", "error", err)
+			c.logger.Error("failed to send close message to WebSocket server", "error", err)
 		}
 		c.conn.Close() // Close the underlying network connection.
 		c.conn = nil   // Mark connection as closed to prevent further use.
@@ -135,7 +135,7 @@ func (c *client) readPump() {
 	for {
 		select {
 		case <-c.done:
-			c.logger.Info("Read pump exiting due to shutdown signal")
+			c.logger.Info("read pump exiting due to shutdown signal")
 			return
 		default:
 			// ReadJSON is safe for concurrent reads.
@@ -148,7 +148,7 @@ func (c *client) readPump() {
 			// Use protojson to unmarshal the received bytes into the protobuf message.
 			// protojson.Unmarshal will correctly handle oneof fields.
 			if err := protojson.Unmarshal(messageBytes, &msg); err != nil {
-				c.logger.Error("Failed to unmarshal protobuf message from JSON", "error", err, "rawMessage", string(messageBytes))
+				c.logger.Error("failed to unmarshal protobuf message from JSON", "error", err, "rawMessage", string(messageBytes))
 				// Decide if this is a critical error leading to client shutdown
 				c.Stop()
 				return
@@ -170,7 +170,7 @@ func (c *client) handleMessage(msg *v1.WSMessage) {
 	case ErrorMessageType:
 		c.handleError(msg)
 	default:
-		c.logger.Warn("Received unknown message type", "messageID", msg.ID, "messageType", msg.Type)
+		c.logger.Warn("received unknown message type", "message_id", msg.ID, "message_type", msg.Type)
 	}
 }
 
@@ -179,12 +179,12 @@ func (c *client) handleMessage(msg *v1.WSMessage) {
 func (c *client) handlePong(msg *v1.WSMessage) {
 	pong := msg.GetPingResponse() // Assuming PingResponse is used for pong data.
 	if pong != nil {
-		c.logger.Info("Received PONG response",
-			"messageID", msg.ID,
+		c.logger.Info("received PONG response",
+			"message_id", msg.ID,
 			"sequence", pong.Sequence,
-			"processingTimeUS", pong.ProcessingTimeUS)
+			"processing_time_us", pong.ProcessingTimeUS)
 	} else {
-		c.logger.Warn("Received PONG message with empty PingResponse payload", "messageID", msg.ID)
+		c.logger.Warn("received PONG message with empty PingResponse payload", "message_id", msg.ID)
 	}
 }
 
@@ -193,22 +193,22 @@ func (c *client) handlePong(msg *v1.WSMessage) {
 func (c *client) handleCountResponse(msg *v1.WSMessage) {
 	countResp := msg.GetPingResponse() // Using PingResponse for count data
 	if countResp != nil {
-		c.logger.Info("Received Client Count response", "messageID", msg.ID, "count", countResp.Sequence, "processingTimeUS", countResp.ProcessingTimeUS)
+		c.logger.Info("received Client Count response", "message_id", msg.ID, "count", countResp.Sequence, "processing_time_us", countResp.ProcessingTimeUS)
 	} else {
-		c.logger.Warn("Received Count Response message with empty CountResponse payload", "messageID", msg.ID)
+		c.logger.Warn("received Count Response message with empty CountResponse payload", "message_id", msg.ID)
 	}
 }
 
 func (c *client) handleError(msg *v1.WSMessage) {
 	errorResp := msg.GetErrorResponse()
 	if errorResp != nil {
-		c.logger.Error("Received server error",
-			"messageID", msg.ID,
-			"errorCode", errorResp.Code,
-			"errorReason", errorResp.Reason,
-			"errorMessage", errorResp.Message)
+		c.logger.Error("received server error",
+			"message_id", msg.ID,
+			"error_code", errorResp.Code,
+			"error_reason", errorResp.Reason,
+			"error_message", errorResp.Message)
 	} else {
-		c.logger.Error("Received error message with empty ErrorResponse payload", "messageID", msg.ID)
+		c.logger.Error("received error message with empty ErrorResponse payload", "message_id", msg.ID)
 	}
 }
 
@@ -224,7 +224,7 @@ func (c *client) pingPump() {
 	for {
 		select {
 		case <-c.done:
-			c.logger.Info("Ping pump exiting due to shutdown signal")
+			c.logger.Info("ping pump exiting due to shutdown signal")
 			return
 		case <-ticker.C:
 			c.sendPing(sequence)
@@ -244,7 +244,7 @@ func (c *client) countPump() {
 	for {
 		select {
 		case <-c.done:
-			c.logger.Info("Count pump exiting due to shutdown signal")
+			c.logger.Info("count pump exiting due to shutdown signal")
 			return
 		case <-ticker.C:
 			c.sendCountRequest()
@@ -270,7 +270,7 @@ func (c *client) sendPing(sequence uint64) {
 	}
 
 	c.sendMessage(msg)
-	c.logger.Debug("Sent PING request", "messageID", msg.ID, "sequence", sequence)
+	c.logger.Debug("sent PING request", "message_id", msg.ID, "sequence", sequence)
 }
 
 // sendCountRequest constructs and sends a count request message to the server.
@@ -285,7 +285,7 @@ func (c *client) sendCountRequest() {
 	}
 
 	c.sendMessage(msg)
-	c.logger.Debug("Sent COUNT request", "messageID", msg.ID)
+	c.logger.Debug("sent COUNT request", "message_id", msg.ID)
 }
 
 // sendMessage sends a protobuf message to the WebSocket server.
@@ -297,7 +297,7 @@ func (c *client) sendMessage(msg *v1.WSMessage) {
 	// Set a write deadline to prevent writes from blocking indefinitely.
 	err := c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 	if err != nil {
-		c.logger.Error("Failed to set write deadline for WebSocket connection", "error", err)
+		c.logger.Error("failed to set write deadline for WebSocket connection", "error", err)
 		c.Stop() // Initiate client shutdown if write deadline cannot be set.
 		return
 	}
@@ -306,16 +306,16 @@ func (c *client) sendMessage(msg *v1.WSMessage) {
 	// protojson.Marshal will correctly handle oneof fields.
 	messageBytes, err := protojson.Marshal(msg)
 	if err != nil {
-		c.logger.Error("Failed to marshal protobuf message to JSON",
-			"messageType", msg.Type, "messageID", msg.ID, "error", err)
+		c.logger.Error("failed to marshal protobuf message to JSON",
+			"message_type", msg.Type, "message_id", msg.ID, "error", err)
 		c.Stop()
 		return
 	}
 
 	// Send the JSON bytes as a text message over WebSocket.
 	if err := c.conn.WriteMessage(websocket.TextMessage, messageBytes); err != nil {
-		c.logger.Error("Failed to write JSON message to WebSocket connection",
-			"messageType", msg.Type, "messageID", msg.ID, "error", err)
+		c.logger.Error("failed to write JSON message to WebSocket connection",
+			"message_type", msg.Type, "message_id", msg.ID, "error", err)
 		c.Stop()
 		return
 	}
@@ -330,7 +330,7 @@ func (c *client) sendInvalidMessage() {
 	}
 
 	c.sendMessage(msg)
-	c.logger.Info("Sent INVALID message for server error handling test", "messageID", msg.ID)
+	c.logger.Info("sent INVALID message for server error handling test", "message_id", msg.ID)
 }
 
 func main() {
@@ -351,12 +351,12 @@ func main() {
 		Level:     slog.LevelDebug, // Adjust logging level as needed (e.g., slog.LevelInfo for production)
 	})))
 
-	slog.Info("Starting WebSocket client test",
-		"serverURL", *serverURL,
-		"numClients", *numClients,
-		"pingInterval", *pingInterval,
-		"testDuration", *testDuration,
-		"testInvalidMessage", *testInvalid,
+	slog.Info("starting WebSocket client test",
+		"server_url", *serverURL,
+		"num_clients", *numClients,
+		"ping_interval", *pingInterval,
+		"test_duration", *testDuration,
+		"test_invalid_message", *testInvalid,
 	)
 
 	// Context for graceful shutdown, listening for OS interrupt signals.
@@ -384,7 +384,7 @@ func main() {
 			clients[i] = cli // Store the client instance.
 
 			if err := cli.Connect(); err != nil {
-				slog.Error("Failed to connect client, initiating graceful shutdown",
+				slog.Error("failed to connect client, initiating graceful shutdown",
 					"clientIndex", i+1, "userID", currentUserID, "error", err)
 				cancel() // Signal all operations to stop on first client connection failure.
 				return
@@ -397,7 +397,7 @@ func main() {
 	// Check if the context was canceled during client setup (e.g., connection failure or interrupt).
 	select {
 	case <-ctx.Done():
-		slog.Warn("Test interrupted or client setup failed. Shutting down.", "reason", ctx.Err())
+		slog.Warn("test interrupted or client setup failed. Shutting down.", "reason", ctx.Err())
 		// Stop any clients that might have connected before the cancellation.
 		for _, cli := range clients {
 			if cli != nil {
@@ -416,7 +416,7 @@ func main() {
 			case <-ctx.Done():
 				return // Do not send if the context is already cancelled.
 			case <-time.After(5 * time.Second):
-				slog.Info("Triggering invalid message send for testing server error handling", "targetClient", clients[0].userID)
+				slog.Info("triggering invalid message send for testing server error handling", "targetClient", clients[0].userID)
 				clients[0].sendInvalidMessage()
 			}
 		}()
@@ -425,25 +425,25 @@ func main() {
 	// Wait for the specified test duration or an interrupt signal.
 	select {
 	case <-time.After(*testDuration):
-		slog.Info("Test duration completed. Initiating graceful shutdown.")
+		slog.Info("test duration completed. Initiating graceful shutdown.")
 	case <-ctx.Done():
-		slog.Info("Interrupt signal received. Initiating graceful shutdown.", "signal", ctx.Err())
+		slog.Info("interrupt signal received. Initiating graceful shutdown.", "signal", ctx.Err())
 	}
 
 	// Initiate clean shutdown for all active clients.
-	slog.Info("Shutting down all active clients...")
+	slog.Info("shutting down all active clients...")
 	var clientShutdownWg sync.WaitGroup
 	for i, cli := range clients {
 		if cli != nil {
 			clientShutdownWg.Add(1)
 			go func(index int, clientToStop *client) {
 				defer clientShutdownWg.Done()
-				slog.Debug("Stopping client", "clientIndex", index+1, "userID", clientToStop.userID)
+				slog.Debug("stopping client", "clientIndex", index+1, "userID", clientToStop.userID)
 				clientToStop.Stop()
 			}(i, cli)
 		}
 	}
 	clientShutdownWg.Wait() // Wait for all clients to finish stopping.
 
-	slog.Info("WebSocket client test completed.")
+	slog.Info("webSocket client test completed.")
 }

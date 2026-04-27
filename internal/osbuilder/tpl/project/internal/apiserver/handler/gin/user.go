@@ -76,7 +76,8 @@ func (h *Handler) ListUser(c *gin.Context) {
 }
 
 func init() {
-	Register(func(v1 *gin.RouterGroup, handler *Handler, mws ...gin.HandlerFunc) {
+	Register(func(engine *gin.RouterGroup, handler *Handler, mws ...gin.HandlerFunc) {
+		v1 := engine.Group("/v1")
 		rg := v1.Group("/users")
 		rg.POST("", handler.CreateUser)
 		rg.Use(mws...)

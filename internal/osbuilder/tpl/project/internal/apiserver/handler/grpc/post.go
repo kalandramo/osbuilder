@@ -23,7 +23,7 @@ func (h *Handler) Create{{.Web.R.SingularName}}(ctx context.Context, rq *{{.M.AP
     metrics.M.RecordResourceCreate(ctx, "{{.Web.R.SingularLower}}")
     {{- end}}
 
-    slog.InfoContext(ctx, "Processing {{.Web.R.SingularLower}} creation request", "layer", "handler")
+    slog.InfoContext(ctx, "processing {{.Web.R.SingularLower}} creation request", "layer", "handler")
 
 	return h.biz.{{.Web.R.BusinessFactoryName}}().Create(ctx, rq)
 }
@@ -52,7 +52,7 @@ func (h *Handler) Get{{.Web.R.SingularName}}(ctx context.Context, rq *{{.M.APIAl
     metrics.M.RecordResourceGet(ctx, "{{.Web.R.SingularLower}}")
     {{- end}}
 
-    slog.InfoContext(ctx, "Processing {{.Web.R.SingularLower}} retrive request", "layer", "handler")
+    slog.InfoContext(ctx, "processing {{.Web.R.SingularLower}} retrive request", "layer", "handler")
 
 	return h.biz.{{.Web.R.BusinessFactoryName}}().Get(ctx, rq)
 }

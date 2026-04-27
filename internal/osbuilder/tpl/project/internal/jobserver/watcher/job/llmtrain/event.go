@@ -71,7 +71,7 @@ func (sm *StateMachine) Embedding(ctx context.Context, event *fsm.Event) error {
 	embs, err := sm.Watcher.embedder.EmbedDocuments(ctx, docs)
 	if err != nil {
 		// Log error with structured attributes instead of string formatting.
-		contextx.L(ctx).ErrorContext(ctx, "Failed to embed documents", "error", err)
+		contextx.L(ctx).ErrorContext(ctx, "failed to embed documents", "error", err)
 		return err
 	}
 
@@ -81,7 +81,7 @@ func (sm *StateMachine) Embedding(ctx context.Context, event *fsm.Event) error {
 		// Assuming emb is compatible with json.Marshal (e.g., []float32).
 		bytes, err := json.Marshal(emb)
 		if err != nil {
-			contextx.L(ctx).ErrorContext(ctx, "Failed to marshal embedding", "error", err)
+			contextx.L(ctx).ErrorContext(ctx, "failed to marshal embedding", "error", err)
 			return err
 		}
 		embeddingsStr = append(embeddingsStr, string(bytes))
@@ -130,7 +130,7 @@ func (sm *StateMachine) Train(ctx context.Context, event *fsm.Event) error {
 
 	status, err := sm.Watcher.train.GetTaskStatus(ctx, *results.TaskID)
 	if err != nil {
-		contextx.L(ctx).ErrorContext(ctx, "Failed to get task status", "task_id", *results.TaskID, "error", err)
+		contextx.L(ctx).ErrorContext(ctx, "failed to get task status", "task_id", *results.TaskID, "error", err)
 		return err
 	}
 

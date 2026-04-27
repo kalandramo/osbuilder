@@ -38,7 +38,7 @@ var _ registry.Watcher = (*Watcher)(nil)
 func (w *Watcher) Run() {
 	_, {{$D.R.PluralLower}}, err := w.store.{{$D.R.SingularName}}().List(context.Background(), where.NewWhere())
 	if err != nil {
-		slog.Error("Failed to list {{$D.R.PluralLower}}", "error", err)
+		slog.Error("failed to list {{$D.R.PluralLower}}", "error", err)
 		return
 	}
 

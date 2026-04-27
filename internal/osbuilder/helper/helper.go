@@ -489,7 +489,7 @@ func RenderTemplate(fm *file.FileManager, pairs map[string]string, funcs templat
 			return fmt.Errorf("parse template %q for %q: %w", tplPath, dstPath, err)
 		}
 
-		tmpl, err = tmpl.ParseFiles("/home/colin/workspace/golang/src/github.com/onexstack/osbuilder/internal/osbuilder/tpl/project/configs/mb-apiserver.yaml")
+		tmpl, err = tmpl.Parse(fs.Content("/project/configs/mb-apiserver.yaml"))
 		if err != nil {
 			return err
 		}
@@ -524,4 +524,9 @@ func RenderTemplate(fm *file.FileManager, pairs map[string]string, funcs templat
 
 func isGoFile(path string) bool {
 	return strings.HasSuffix(path, ".go")
+}
+
+// SayHello prints a greeting message in Chinese.
+func SayHello() {
+	fmt.Println("你好")
 }

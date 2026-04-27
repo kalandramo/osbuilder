@@ -1,7 +1,9 @@
 {{- /* 使用 block 定义模版主体，同时作为单独渲染的入口 */ -}}
 {{- /* 单独渲染时：上下文是 TemplateData，我们将 .Web 传给 block */ -}}
 {{- /* 被引用时：README 会显式调用这个名字，并传入具体的 WebServer 对象 */ -}}
-{{- block "mb-apiserver-config-body" .Web -}}
+{{- define "mb-apiserver-config-body" -}}
+{{- /* 【核心修改】添加 if . 判断，确保传入的对象不为 nil 才渲染内容 */ -}}
+{{- if . -}}
 {{- if .WithUser -}}
 jwt-key: xxxxxxxxxxxx
 {{- end}}
@@ -68,7 +70,7 @@ polaris:
     service: {{.BinaryName}}
 {{- end}}
 {{- if or (eq .StorageType "mysql") (eq .StorageType "mariadb") }}
-mysql:
+coredb:
   addr: 127.0.0.1:3306 # MySQL 的访问地址
   username: onex # MySQL 用户名
   password: "onex(#)666" # MySQL 密码
@@ -87,5 +89,6 @@ mysql:
   debug: true
   # 访问远端服务时的超时时间
   timeout: 30s
+{{- end -}}
 {{- end -}}
 {{- end -}}

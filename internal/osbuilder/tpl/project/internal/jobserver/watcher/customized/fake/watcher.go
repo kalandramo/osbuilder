@@ -10,12 +10,12 @@ import (
 	"github.com/onexstack/onexstack/pkg/watch"
 	"github.com/onexstack/onexstack/pkg/watch/registry"
 
+	"{{.M.ModuleName}}/internal/pkg/contextx"
+	known "{{.M.ModuleName}}/internal/pkg/known/job"
 	"{{.M.ModuleName}}/internal/{{.Job.Name}}/model"
 	"{{.M.ModuleName}}/internal/{{.Job.Name}}/pkg/metrics"
 	"{{.M.ModuleName}}/internal/{{.Job.Name}}/store"
 	"{{.M.ModuleName}}/internal/{{.Job.Name}}/watcher"
-	"{{.M.ModuleName}}/internal/pkg/contextx"
-	known "{{.M.ModuleName}}/internal/pkg/known/job"
 )
 
 const (
@@ -37,7 +37,7 @@ var _ registry.Watcher = (*Watcher)(nil)
 func (w *Watcher) Run() {
 	_, fakes, err := w.store.Fake().List(context.Background(), where.NewWhere())
 	if err != nil {
-		slog.Error("Failed to list fakes", "error", err)
+		slog.Error("failed to list fakes", "error", err)
 		return
 	}
 

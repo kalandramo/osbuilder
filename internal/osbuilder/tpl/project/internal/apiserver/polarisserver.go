@@ -58,9 +58,9 @@ func (c *ServerConfig) NewPolarisServer() (*polarisServer, error) {
             },
 		)))
         // You can change this port if needed (e.g. ":9090")
-        slog.Info("Start metrics server on %s", c.MetricsAddr)
+        slog.Info("start metrics server on %s", c.MetricsAddr)
         if err := r.Run(c.MetricsAddr); err != nil && err != http.ErrServerClosed {
-            slog.Error("Failed to start metrics server", "error", err)
+            slog.Error("failed to start metrics server", "error", err)
             os.Exit(1)
         }
     }()

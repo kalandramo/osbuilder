@@ -36,7 +36,7 @@ func main() {
 		grpc.WithUnaryInterceptor(unaryClientInterceptor()), // 添加 UnaryClientInterceptor
 	)
 	if err != nil {
-		log.Fatalf("Failed to connect to grpc server: %v", err) // 如果连接失败，记录错误并退出程序
+		log.Fatalf("failed to connect to grpc server: %v", err) // 如果连接失败，记录错误并退出程序
 	}
 	defer conn.Close() // 确保在函数结束时关闭连接，避免资源泄漏
 
@@ -55,7 +55,7 @@ func main() {
 	var header metadata.MD                                      // 用于存储返回的 Header 元数据
 	resp, err := client.Healthz(ctx, nil, grpc.Header(&header)) // 发起 gRPC 请求
 	if err != nil {
-		log.Fatalf("Failed to call healthz: %v", err) // 如果调用失败，记录错误并退出程序
+		log.Fatalf("failed to call healthz: %v", err) // 如果调用失败，记录错误并退出程序
 	}
 
 	for key, val := range header {

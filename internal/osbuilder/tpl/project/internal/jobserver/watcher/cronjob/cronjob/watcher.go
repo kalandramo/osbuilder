@@ -16,11 +16,11 @@ import (
 	"github.com/onexstack/onexstack/pkg/watch/manager"
 	"github.com/onexstack/onexstack/pkg/watch/registry"
 
-    "{{.M.ModuleName}}/internal/{{.Job.Name}}/model"
-    "{{.M.ModuleName}}/internal/{{.Job.Name}}/pkg/metrics"
-    "{{.M.ModuleName}}/internal/{{.Job.Name}}/store"
-    "{{.M.ModuleName}}/internal/pkg/contextx"
-    known "{{.M.ModuleName}}/internal/pkg/known/job"
+	"{{.M.ModuleName}}/internal/pkg/contextx"
+	known "{{.M.ModuleName}}/internal/pkg/known/job"
+	"{{.M.ModuleName}}/internal/{{.Job.Name}}/model"
+	"{{.M.ModuleName}}/internal/{{.Job.Name}}/pkg/metrics"
+	"{{.M.ModuleName}}/internal/{{.Job.Name}}/store"
 )
 
 // Ensure Watcher implements the registry.Watcher interface.
@@ -67,12 +67,12 @@ func (j saveJob) Run() {
 	// Check if we've reached the maximum number of jobs for this cron job.
 	count, _, err := j.store.Job().List(j.ctx, where.F("cronjob_id", j.cronJob.CronJobID))
 	if err != nil {
-		slog.Error("Failed to list existing jobs", "error", err)
+		slog.Error("failed to list existing jobs", "error", err)
 		return
 	}
 
 	if count >= known.MaxJobsPerCronJob {
-		slog.Debug("Maximum jobs per cron job reached", "cronjob_id", j.cronJob.CronJobID, "count", count, "max", known.MaxJobsPerCronJob)
+		slog.Debug("maximum jobs per cron job reached", "cronjob_id", j.cronJob.CronJobID, "count", count, "max", known.MaxJobsPerCronJob)
 		return
 	}
 
@@ -86,11 +86,11 @@ func (j saveJob) Run() {
 	job.CreatedAt = time.Now()
 
 	if err := j.store.Job().Create(j.ctx, job); err != nil {
-		slog.Error("Failed to create job from template", "error", err)
+		slog.Error("failed to create job from template", "error", err)
 		return
 	}
 
-	slog.Info("Created new job from cron job template", "job_name", job.Name, "cronjob_id", j.cronJob.CronJobID)
+	slog.Info("created new job from cron job template", "job_name", job.Name, "cronjob_id", j.cronJob.CronJobID)
 }
 
 // Run executes the main watcher logic.
@@ -102,11 +102,11 @@ func (w *Watcher) Run() {
 	// Fetch all non-suspended cron jobs from the database.
 	_, cronJobs, err := w.store.CronJob().List(ctx, where.F("suspend", known.JobNonSuspended))
 	if err != nil {
-		slog.Error("Failed to list cron jobs", "error", err)
+		slog.Error("failed to list cron jobs", "error", err)
 		return
 	}
 
-	slog.Debug("Fetched cron jobs from database", "count", len(cronJobs))
+	slog.Debug("fetched cron jobs from database", "count", len(cronJobs))
 
 	// Remove cron jobs that no longer exist in the database.
 	w.removeNonExistentCronJobs(cronJobs)
@@ -139,19 +139,19 @@ func (w *Watcher) processJob(ctx context.Context, cronJob *model.CronJobM) (err 
 
 	// Validate cron job configuration.
 	if cronJob.JobTemplate == nil {
-		slog.Warn("Skipping cron job with nil job template")
+		slog.Warn("skipping cron job with nil job template")
 		return nil
 	}
 
 	// Skip if already scheduled.
 	if w.jm.Exists(jobName) {
-		slog.Debug("Cron job already scheduled")
+		slog.Debug("cron job already scheduled")
 		return nil
 	}
 
 	w.jm.Add(jobName, cronJob.Schedule, saveJob{store: w.store, ctx: ctx, cronJob: cronJob})
 
-	slog.Debug("Added cron job to scheduler", "schedule", cronJob.Schedule)
+	slog.Debug("added cron job to scheduler", "schedule", cronJob.Schedule)
 
 	return nil
 }
@@ -174,16 +174,16 @@ func (w *Watcher) removeNonExistentCronJobs(cronJobs []*model.CronJobM) {
 		}
 
 		if err := w.jm.Del(jobName); err != nil {
-			slog.Error("Failed to remove cron job from scheduler", "job_name", jobName, "error", err)
+			slog.Error("failed to remove cron job from scheduler", "job_name", jobName, "error", err)
 			continue
 		}
 
 		removedCount++
-		slog.Info("Removed non-existent cron job from scheduler", "job_name", jobName)
+		slog.Info("removed non-existent cron job from scheduler", "job_name", jobName)
 	}
 
 	if removedCount > 0 {
-		slog.Info("Cleanup completed", "removed_jobs", removedCount)
+		slog.Info("cleanup completed", "removed_jobs", removedCount)
 	}
 }
 

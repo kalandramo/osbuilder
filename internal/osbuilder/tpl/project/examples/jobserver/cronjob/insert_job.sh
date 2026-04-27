@@ -58,7 +58,7 @@ EOF
     if [ $? -eq 0 ]; then
         echo "[SUCCESS] Data successfully inserted into dms_cronjob."
     else
-        echo "[ERROR] Failed to insert into dms_cronjob."
+        echo "[ERROR] failed to insert into dms_cronjob."
         exit 1
     fi
 }
@@ -106,7 +106,7 @@ EOF
     if [ $? -eq 0 ]; then
         echo "[SUCCESS] Data successfully inserted into dms_job."
     else
-        echo "[ERROR] Failed to insert into dms_job."
+        echo "[ERROR] failed to insert into dms_job."
         exit 1
     fi
 }

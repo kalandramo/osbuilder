@@ -19,7 +19,7 @@ type ServerOptions struct {
 	{{- end}}
 	{{- if eq .MQ.StorageType "mariadb"}}
 	// MySQLOptions contains the MySQL configuration options.
-	MySQLOptions *genericoptions.MySQLOptions `json:"mysql" mapstructure:"mysql"`
+	MySQLOptions *genericoptions.MySQLOptions `json:"coredb" mapstructure:"coredb"`
 	{{- end}}
 	{{- if eq .MQ.StorageType "postgresql"}}
 	// PostgreSQLOptions contains the PostgreSQL configuration options.
@@ -79,7 +79,7 @@ func (o *ServerOptions) AddFlags(fs *pflag.FlagSet) {
 	o.KafkaOptions.AddFlags(fs, "kafka")
 	{{- end}}
 	{{- if eq .MQ.StorageType "mariadb"}}
-	o.MySQLOptions.AddFlags(fs, "mysql")
+	o.MySQLOptions.AddFlags(fs, "coredb")
 	{{- end}}
 	{{- if eq .MQ.StorageType "postgresql"}}
 	o.PostgreSQLOptions.AddFlags(fs, "postgresql")

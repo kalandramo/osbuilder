@@ -20,7 +20,7 @@ type Handler struct {
 
 
 // Registrar defines a function signature for registering HTTP routes.
-type Registrar func(v1 *gin.RouterGroup, h *Handler, mws ...gin.HandlerFunc)
+type Registrar func(engine *gin.RouterGroup, h *Handler, mws ...gin.HandlerFunc)
 
 var registrars []Registrar
 
@@ -41,9 +41,9 @@ func Register(r Registrar) {
 }
 
 // ApplyTo applies the registered REST API registrars to the provided Gin router group.
-func (h *Handler) ApplyTo(v1 *gin.RouterGroup, mws ...gin.HandlerFunc) {
+func (h *Handler) ApplyTo(engine *gin.RouterGroup, mws ...gin.HandlerFunc) {
     for _, r := range registrars {
-        r(v1, h, mws...)
+        r(engine, h, mws...)
     }
 
     slog.Info("rest api routes installed", "count", len(registrars))

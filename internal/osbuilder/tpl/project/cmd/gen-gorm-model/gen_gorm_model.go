@@ -65,7 +65,7 @@ func main() {
 	// 初始化数据库连接
 	dbInstance, err := initializ.Dbase()
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Fatalf("failed to connect to database: %v", err)
 	}
 
 	// 处理组件并生成代码

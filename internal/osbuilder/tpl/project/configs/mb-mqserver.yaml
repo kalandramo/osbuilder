@@ -63,7 +63,7 @@ slog:
   output: stdout # 支持 stdout 和文件路径
 {{- end}}
 {{- if or (eq .MQ.StorageType "mysql") (eq .MQ.StorageType "mariadb") }}
-mysql:
+coredb:
   addr: 127.0.0.1:3306
   username: onex
   password: "onex(#)666"

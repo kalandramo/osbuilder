@@ -74,7 +74,7 @@ func NewEngine(brokers []string, groupID string, opts ...Option) (*Engine, error
 
 	client, err := kgo.NewClient(kgoOpts...)
 	if err != nil {
-		e.logger.Error("Failed to create Kafka client", "error", err)
+		e.logger.Error("failed to create Kafka client", "error", err)
 		return nil, fmt.Errorf("failed to create Kafka client: %w", err)
 	}
 	e.client = client
@@ -198,7 +198,7 @@ func (e *Engine) Start(ctx context.Context) error {
 		// or batch committing only when all records in a batch are successfully processed.
 		if err := e.client.CommitUncommittedOffsets(ctx); err != nil {
 			if !errors.Is(err, kgo.ErrClientClosed) {
-				e.logger.Error("Failed to commit uncommitted Kafka offsets", "error", err)
+				e.logger.Error("failed to commit uncommitted Kafka offsets", "error", err)
 			}
 		}
 	}
