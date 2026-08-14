@@ -1,5 +1,12 @@
 package templates
 
+import (
+	"fmt"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+)
+
 func ChildCommandHelpFunc(cmd *cobra.Command, args []string) {
 	// 打印子命令自己的 Flag 信息
 	fmt.Println("Usage:")
